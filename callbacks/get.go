@@ -19,12 +19,12 @@ func Get(k *kom.Kubectl) error {
 	name := stmt.Name
 	ctx := stmt.Context
 	conditions := stmt.Filter.Conditions
-	// 如果设置了where条件。那么应该使用List，因为sql查出来的是list，哪怕是只有一个元素
+	// If where conditions are set, List should be used because SQL queries return a list, even if it has only one element
 	if len(conditions) > 0 {
-		return fmt.Errorf("SQL 查询方式请使用List承载，如需获取单个资源，请从List中获得")
+		return fmt.Errorf("Please use List for SQL queries, if you need to get a single resource, get it from the List")
 	}
 	if name == "" {
-		err = fmt.Errorf("获取对象必须指定名称")
+		err = fmt.Errorf("Name must be specified when getting an object")
 		return err
 	}
 
@@ -48,7 +48,7 @@ func Get(k *kom.Kubectl) error {
 	if stmt.RemoveManagedFields {
 		utils.RemoveManagedFields(res)
 	}
-	// 将 unstructured 转换回原始对象
+	// Convert unstructured back to original object
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(res.Object, stmt.Dest)
 	if err != nil {
 		return err

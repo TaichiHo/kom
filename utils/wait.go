@@ -6,16 +6,16 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// WaitUntil 传入一个函数 f，如果 f 返回 true 则停止等待，否则持续检查直到超时
+// WaitUntil takes a function f and waits until f returns true or timeout is reached
 // Example:
-// // 定义一个检查函数，模拟每 10 秒满足一次条件
+// // Define a check function that simulates a condition being met every 10 seconds
 //
 //	checkCondition := func() bool {
-//		// 例如条件为当前秒数是 10 的倍数
+//		// For example, condition is true when current second is a multiple of 10
 //		return time.Now().Second()%10 == 0
 //	}
 //
-//	// 每 2 秒检查一次，超时设定为 30 秒
+//	// Check every 2 seconds with a timeout of 30 seconds
 //	interval := 2 * time.Second
 //	timeout := 30 * time.Second
 //
@@ -33,11 +33,11 @@ func WaitUntil(f func() bool, interval time.Duration, timeout time.Duration) boo
 		select {
 		case <-timeoutTimer:
 			klog.V(4).Infof("Timeout reached, stopping monitoring.")
-			return false // 超时返回 false
+			return false // Return false on timeout
 		case <-ticker.C:
 			if f() {
 				klog.V(4).Infof("Condition met, stopping monitoring.")
-				return true // 如果 f 返回 true 则停止
+				return true // Stop if f returns true
 			}
 			klog.V(2).Infof("Condition not met, retrying...")
 		}

@@ -24,7 +24,7 @@ func Patch(k *kom.Kubectl) error {
 	var res *unstructured.Unstructured
 	var err error
 	if name == "" {
-		err = fmt.Errorf("patch对象必须指定名称")
+		err = fmt.Errorf("Name must be specified when patching an object")
 		return err
 	}
 	if namespaced {
@@ -43,7 +43,7 @@ func Patch(k *kom.Kubectl) error {
 	if stmt.RemoveManagedFields {
 		utils.RemoveManagedFields(res)
 	}
-	// 将 unstructured 转换回原始对象
+	// Convert unstructured back to original object
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(res.Object, stmt.Dest)
 	if err != nil {
 		return err

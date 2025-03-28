@@ -7,6 +7,7 @@ import (
 	"github.com/weibaohui/kom/callbacks"
 	"github.com/weibaohui/kom/kom"
 	"k8s.io/client-go/util/homedir"
+	"k8s.io/klog/v2"
 )
 
 func Connect() {
@@ -16,6 +17,13 @@ func Connect() {
 	if defaultKubeConfig == "" {
 		defaultKubeConfig = filepath.Join(homedir.HomeDir(), ".kube", "config")
 	}
-	_, _ = kom.Clusters().RegisterByPathWithID(defaultKubeConfig, "default")
+	_, err := kom.Clusters().RegisterByPathWithID(defaultKubeConfig, "default")
+	if err != nil {
+		klog.Errorf("register cluster api configs error %v", err)
+	}
+	err = kom.Clusters().RegisterClusterAPIConfigs()
+	if err != nil {
+		klog.Errorf("register cluster api configs error %v", err)
+	}
 	kom.Clusters().Show()
 }

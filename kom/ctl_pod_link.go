@@ -12,25 +12,25 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// 获取pod相关的Service
+// Get pod-related Services
 func (p *pod) LinkedService() ([]*v1.Service, error) {
-	// 	查询流程
-	// 获取目标 Pod 的详细信息：
+	// Search process
+	// Get target Pod details:
 
-	// 使用 Pod 的 API 获取其 metadata.labels。
-	// 确定 Pod 所在的 Namespace。
-	// 获取 Namespace 内的所有 Services：
+	// Get metadata.labels using Pod API.
+	// Determine Pod's Namespace.
+	// Get all Services in the Namespace:
 
-	// 使用 kubectl get services -n {namespace} 或调用 API /api/v1/namespaces/{namespace}/services。
-	// 逐个匹配 Service 的 selector：
+	// Use kubectl get services -n {namespace} or call API /api/v1/namespaces/{namespace}/services.
+	// Match each Service's selector:
 
-	// 对每个 Service：
-	// 提取其 spec.selector。
-	// 遍历 selector 的所有键值对，检查 Pod 是否包含这些标签且值相等。
-	// 如果所有标签条件都满足，将此 Service 记录为与该 Pod 关联。
-	// 返回结果：
+	// For each Service:
+	// Extract its spec.selector.
+	// Check if Pod has all these labels with matching values.
+	// If all label conditions are met, record this Service as associated with the Pod.
+	// Return results:
 
-	// 将所有匹配的 Service 名称及相关信息返回。
+	// Return all matching Service names and related information.
 	var pod *v1.Pod
 	err := p.kubectl.WithCache(p.kubectl.Statement.CacheTTL).Get(&pod).Error
 	if err != nil {
@@ -59,12 +59,12 @@ func (p *pod) LinkedService() ([]*v1.Service, error) {
 	var result []*v1.Service
 	for _, svc := range services {
 		serviceLabels := svc.Spec.Selector
-		//如果为空，标明没有特定的pod selector，则跳过这个svc
+		// If empty, indicates no specific pod selector, skip this svc
 		if len(serviceLabels) == 0 {
 			continue
 		}
-		// 遍历selector
-		// serviceLabels中所有的kv,都必须在podLabels中存在,且值相等
+		// Iterate through selector
+		// All kv pairs in serviceLabels must exist in podLabels with matching values
 		if utils.CompareMapContains(serviceLabels, podLabels) {
 			result = append(result, svc)
 		}
@@ -270,8 +270,8 @@ func (p *pod) LinkedIngress() ([]*networkingv1.Ingress, error) {
 	return result, nil
 }
 
-// PodMount 是Pod的挂载信息
-// 挂载的类型有：configMap、secret
+// PodMount contains Pod mount information
+// Mount types include: configMap, secret
 type PodMount struct {
 	Name      string `json:"name,omitempty"`
 	MountPath string `json:"mountPath,omitempty"`
@@ -280,14 +280,14 @@ type PodMount struct {
 	ReadOnly  bool   `json:"readOnly,omitempty"`
 }
 
-// LinkedConfigMap 获取Pod相关的ConfigMap
+// LinkedConfigMap gets Pod-related ConfigMaps
 func (p *pod) LinkedConfigMap() ([]*v1.ConfigMap, error) {
 	var item *v1.Pod
 	err := p.kubectl.Get(&item).Error
 	if err != nil {
 		return nil, err
 	}
-	// 找打configmap 名称列表
+	// Find configmap name list
 	var configMapNames []string
 	for _, volume := range item.Spec.Volumes {
 		if volume.ConfigMap != nil {
@@ -297,7 +297,7 @@ func (p *pod) LinkedConfigMap() ([]*v1.ConfigMap, error) {
 	if len(configMapNames) == 0 {
 		return nil, nil
 	}
-	// 找出同ns下configmap的列表，过滤configMapNames
+	// Find configmap list in the same namespace, filter by configMapNames
 	var configMapList []*v1.ConfigMap
 	err = p.kubectl.newInstance().WithContext(p.kubectl.Statement.Context).
 		Resource(&v1.ConfigMap{}).
@@ -311,9 +311,9 @@ func (p *pod) LinkedConfigMap() ([]*v1.ConfigMap, error) {
 
 	// item.Spec.Containers.volumeMounts
 	// item.Spec.Volumes
-	// 通过遍历secretNames，可以找到pod.Spec.Volumes中的volumeName。
-	// 通过volumeName，可以找到pod.Spec.Containers.volumeMounts中的volumeMounts，提取mode
-	// 提取volumeMounts中的mountPath、subPath
+	// Through iterating secretNames, we can find volumeName in pod.Spec.Volumes.
+	// Through volumeName, we can find volumeMounts in pod.Spec.Containers.volumeMounts, extract mode
+	// Extract mountPath, subPath from volumeMounts
 
 	for i := range configMapList {
 		configMap := configMapList[i]
@@ -352,14 +352,14 @@ func (p *pod) LinkedConfigMap() ([]*v1.ConfigMap, error) {
 	return configMapList, nil
 }
 
-// LinkedSecret 获取Pod相关的Secret
+// LinkedSecret gets Pod-related Secrets
 func (p *pod) LinkedSecret() ([]*v1.Secret, error) {
 	var item *v1.Pod
 	err := p.kubectl.Get(&item).Error
 	if err != nil {
 		return nil, err
 	}
-	// 找打secret 名称列表
+	// Find secret name list
 	var secretNames []string
 	for _, volume := range item.Spec.Volumes {
 		if volume.Secret != nil {
@@ -369,7 +369,7 @@ func (p *pod) LinkedSecret() ([]*v1.Secret, error) {
 	if len(secretNames) == 0 {
 		return nil, nil
 	}
-	// 找出同ns下secret的列表，过滤secretNames
+	// Find secret list in the same namespace, filter by secretNames
 	var secretList []*v1.Secret
 	err = p.kubectl.newInstance().WithContext(p.kubectl.Statement.Context).
 		Resource(&v1.Secret{}).
@@ -383,9 +383,9 @@ func (p *pod) LinkedSecret() ([]*v1.Secret, error) {
 
 	// item.Spec.Containers.volumeMounts
 	// item.Spec.Volumes
-	// 通过遍历secretNames，可以找到pod.Spec.Volumes中的volumeName。
-	// 通过volumeName，可以找到pod.Spec.Containers.volumeMounts中的volumeMounts，提取mode
-	// 提取volumeMounts中的mountPath、subPath
+	// Through iterating secretNames, we can find volumeName in pod.Spec.Volumes.
+	// Through volumeName, we can find volumeMounts in pod.Spec.Containers.volumeMounts, extract mode
+	// Extract mountPath, subPath from volumeMounts
 
 	for i := range secretList {
 		secret := secretList[i]
@@ -424,7 +424,7 @@ func (p *pod) LinkedSecret() ([]*v1.Secret, error) {
 	return secretList, nil
 }
 
-// Env 每行三个值，容器名称、ENV名称、ENV值
+// Env contains three values per line: container name, ENV name, ENV value
 type Env struct {
 	ContainerName string `json:"containerName,omitempty"`
 	EnvName       string `json:"envName,omitempty"`
@@ -474,9 +474,9 @@ func (p *pod) LinkedEnv() ([]*Env, error) {
 	return envs, nil
 }
 
-// LinkedEnvFromPod 提取pod 定义中的env 定义
+// LinkedEnvFromPod extracts env definitions from pod definition
 func (p *pod) LinkedEnvFromPod() ([]*Env, error) {
-	// 先获取pod，从pod中读取容器列表
+	// First get pod, read container list from pod
 	var pod v1.Pod
 	err := p.kubectl.Get(&pod).Error
 	if err != nil {
@@ -493,10 +493,10 @@ func (p *pod) LinkedEnvFromPod() ([]*Env, error) {
 				continue
 			}
 
-			// ref 有多种情况，需要判断
+			// ref has multiple cases that need to be checked
 			// FieldRef\ResourceFieldRef\ConfigMapKeyRef\SecretKeyRef
-			// 分别获取这四种情况的值，应该是四种中的某一种
-			// 获取env.ValueFrom.FieldRef.FieldPath的值
+			// Get values for these four cases, should be one of the four
+			// Get value of env.ValueFrom.FieldRef.FieldPath
 			if env.ValueFrom != nil && env.ValueFrom.FieldRef != nil && env.ValueFrom.FieldRef.FieldPath != "" {
 				envHolder.EnvValue = fmt.Sprintf("[Field] %s", env.ValueFrom.FieldRef.FieldPath)
 			}
@@ -558,13 +558,13 @@ func (p *pod) LinkedEnvFromPod() ([]*Env, error) {
 }
 
 type SelectedNode struct {
-	Reason  string `json:"reason,omitempty"`    // 选中类型，NodeSelector/NodeAffinity/Tolerations/NodeName
-	Name    string `json:"node_name,omitempty"` // 节点名称
-	Current bool   `json:"current,omitempty"`   // 是否是当前节点
+	Reason  string `json:"reason,omitempty"`    // Selection type: NodeSelector/NodeAffinity/Tolerations/NodeName
+	Name    string `json:"node_name,omitempty"` // Node name
+	Current bool   `json:"current,omitempty"`   // Whether it is the current node
 }
 
-// LinkedNode 可调度主机
-// 暂不支持针对资源限定的cpu 内存主机筛选
+// LinkedNode schedulable hosts
+// Currently does not support host filtering based on CPU and memory resource constraints
 func (p *pod) LinkedNode() ([]*SelectedNode, error) {
 
 	var selectedNodeList []*SelectedNode
@@ -585,8 +585,8 @@ func (p *pod) LinkedNode() ([]*SelectedNode, error) {
 	}
 
 	// 1. NodeSelector
-	// 这个配置表示 Pod 只能调度到带有标签 disktype=ssd 的节点上。
-	// NodeSelector中的标签，Node上必须全部满足
+	// This configuration means Pod can only be scheduled to nodes with label disktype=ssd.
+	// All labels in NodeSelector must be satisfied on the Node
 	if item.Spec.NodeSelector != nil {
 		nodeList = slice.Filter(nodeList, func(index int, n *v1.Node) bool {
 			labels := n.Labels
@@ -634,14 +634,14 @@ func (p *pod) LinkedNode() ([]*SelectedNode, error) {
 
 	}
 
-	// 污点 容忍度
-	// 容忍度只要有一个满足即可。
-	// 如果节点有污点，需要判断
-	// 如果节点没有污点，不需要判断
+	// Taints and tolerations
+	// Only one toleration needs to be satisfied.
+	// If node has taints, need to check
+	// If node has no taints, no need to check
 	if item.Spec.Tolerations != nil && len(item.Spec.Tolerations) > 0 {
 
 		nodeList = slice.Filter(nodeList, func(index int, n *v1.Node) bool {
-			// 如果节点没有污点，不需要判断
+			// If node has no taints, no need to check
 			if n.Spec.Taints == nil || len(n.Spec.Taints) == 0 {
 				return true
 			}
@@ -663,20 +663,20 @@ func (p *pod) LinkedNode() ([]*SelectedNode, error) {
 			return false
 		})
 	}
-	// 最后 配置了nodeName，就只有这一个
+	// Finally, if nodeName is configured, only this one is valid
 	if item.Spec.NodeName != "" {
 		nodeList = slice.Filter(nodeList, func(index int, n *v1.Node) bool {
 			if n.Name == item.Spec.NodeName {
 
-				// 看看之前有没有，如果有，就不再添加
-				// 因为只要匹配上了，都要填到pod.spec.NodeName上
-				// 无法区分是因为nodeSelector，还是nodeAffinity导致的调度成功
+				// Check if it existed before, if yes, don't add again
+				// Because once matched, it needs to be filled in pod.spec.NodeName
+				// Cannot distinguish if scheduling succeeded due to nodeSelector or nodeAffinity
 				for _, selectedNode := range selectedNodeList {
 					if selectedNode.Name == item.Spec.NodeName {
 						return false
 					}
 				}
-				// 第一次
+				// First time
 				selectedNodeList = append(selectedNodeList, &SelectedNode{
 					Reason: "NodeName",
 					Name:   n.Name,
@@ -688,7 +688,7 @@ func (p *pod) LinkedNode() ([]*SelectedNode, error) {
 
 	}
 
-	// 设置是否当前节点
+	// Set whether it is the current node
 	for _, selectedNode := range selectedNodeList {
 		if selectedNode.Name == item.Spec.NodeName {
 			selectedNode.Current = true

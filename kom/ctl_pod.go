@@ -48,9 +48,9 @@ func (p *pod) Stdin(reader io.Reader) *pod {
 }
 func (p *pod) GetLogs(requestPtr interface{}, opt *v1.PodLogOptions) *pod {
 	tx := p.kubectl.getInstance()
-	// 如果只有一个容器，是可以不设置containerName的
+	// If there is only one container, containerName can be omitted
 	// if tx.Statement.ContainerName == "" {
-	// 	p.Error = fmt.Errorf("请先设置ContainerName")
+	// 	p.Error = fmt.Errorf("Please set ContainerName first")
 	// 	return p
 	// }
 	tx.Statement.PodLogOptions = opt

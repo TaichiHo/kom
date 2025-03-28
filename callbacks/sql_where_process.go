@@ -15,33 +15,31 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// executeFilter 使用 lancet 执行过滤
+// executeFilter executes filtering using lancet
 func executeFilter(result []unstructured.Unstructured, conditions []kom.Condition) []unstructured.Unstructured {
 
-	// 最终的结果，按照条件列表，逐一执行过滤
+	// Final result, execute filtering one by one according to the condition list
 
-	// 2. 按 and or 分组
+	// 2. Group by and/or
 	groupedConditions := groupByOperator(conditions)
 
-	// 3. 目前暂时改为支持简单的 and or 逻辑。不管括号。
-	// TODO 需要处理复杂的括号等逻辑情况
+	// 3. Currently changed to support simple and/or logic without considering parentheses.
+	// TODO Need to handle complex logic cases with parentheses
 	// keys and or
 	keys := make([]string, 0, len(groupedConditions))
 	for k := range groupedConditions {
 		keys = append(keys, k)
 	}
 
-	// 3. 按and or 两组 逐个访问 map 并处理
+	// 3. Process map by visiting two groups of and/or
 	for _, key := range keys {
-		// 这个key == and or
+		// This key == and or
 		group := slice.Filter(conditions, func(index int, item kom.Condition) bool {
 			return item.AndOr == key
 		})
-		// 按组进行过滤，一般一组为相同的and or 条件
+		// Filter by group, generally one group has the same and/or conditions
 		result = evaluateCondition(result, group)
-
 	}
-
 	return result
 }
 
@@ -71,31 +69,31 @@ func evaluateCondition(result []unstructured.Unstructured, group []kom.Condition
 	}
 }
 
-// matchAll 判断所有条件都满足 (AND 逻辑)
+// matchAll checks if all conditions are met (AND logic)
 func matchAll(result []unstructured.Unstructured, conditions []kom.Condition) []unstructured.Unstructured {
 	return slice.Filter(result, func(index int, item unstructured.Unstructured) bool {
-		// 遍历所有条件，只有全部条件成立才返回 true
+		// Iterate through all conditions, return true only if all conditions are met
 		for _, c := range conditions {
 			condition := matchCondition(item, c)
 			klog.V(8).Infof("matchAny %s/%s  %s  %s  %s = %v", item.GetNamespace(), item.GetName(), c.Field, c.Operator, c.Value, condition)
 			if !condition {
-				return false // 只要有一个条件不成立，直接返回 false
+				return false // Return false immediately if any condition is not met
 			}
 		}
-		return true // 所有条件都成立，返回 true
+		return true // Return true if all conditions are met
 	})
 }
 
-// matchAny 判断任一条件满足 (OR 逻辑)
+// matchAny checks if any condition is met (OR logic)
 func matchAny(result []unstructured.Unstructured, conditions []kom.Condition) []unstructured.Unstructured {
 	return slice.Filter(result, func(index int, item unstructured.Unstructured) bool {
-		// 遍历所有条件，任意一个条件成立就返回 true
+		// Iterate through all conditions, return true if any condition is met
 		for _, c := range conditions {
 			condition := matchCondition(item, c)
 			klog.V(8).Infof("matchAny %s/%s  %s  %s  %s = %v", item.GetNamespace(), item.GetName(), c.Field, c.Operator, c.Value, condition)
 			if condition {
-				// 任意一个条件达成，就返回。
-				// 没有达成不要返回，让他执行下一个条件
+				// Return if any condition is met.
+				// Don't return if not met, let it execute the next condition
 				return true
 			}
 		}
@@ -103,11 +101,11 @@ func matchAny(result []unstructured.Unstructured, conditions []kom.Condition) []
 	})
 }
 
-// matchCondition 判断单个条件是否匹配
-// 如果要处理的字段，是一个值而不是列表，那么直接进行比较。
-// 如果要处理的字段，对应的是k8s的列表，如 status.addresses[type=InternalIP].address
-// status.addresses是一个数组，status.addresses[type=InternalIP].address 那么取出的address是一个数组，但是这样使用type进行了过滤
-// status.addresses是一个数组，status.addresses.address 那么取出的address也是一个数组，没有按type过滤
+// matchCondition checks if a single condition matches
+// If the field to be processed is a value rather than a list, compare directly.
+// If the field to be processed corresponds to a k8s list, such as status.addresses[type=InternalIP].address
+// status.addresses is an array, status.addresses[type=InternalIP].address then the extracted address is an array, but filtered by type
+// status.addresses is an array, status.addresses.address then the extracted address is also an array, not filtered by type
 // status:
 //
 //	addresses:
@@ -116,19 +114,19 @@ func matchAny(result []unstructured.Unstructured, conditions []kom.Condition) []
 //	    - address: kind-control-plane
 //	      type: Hostname
 //
-// 对于 正向操作符（如 =, like, in, between），只要找到一个匹配的值就返回 true。
-// 对于 负向操作符（如 !=, not in, not between），则要确保所有值都不匹配才返回 true。
+// For positive operators (like =, like, in, between), return true if any matching value is found.
+// For negative operators (like !=, not in, not between), return true only if no values match.
 func matchCondition(resource unstructured.Unstructured, condition kom.Condition) bool {
 	klog.V(6).Infof("matchCondition  %s %s %s", condition.Field, condition.Operator, condition.Value)
 
-	// 获取字段值
+	// Get field value
 	fieldValues, found, err := getNestedFieldAsString(resource.Object, condition.Field)
 	if err != nil || !found {
 		klog.V(6).Infof("not found %s,%v", condition.Field, err)
 		return false
 	}
 
-	// 获取到的值是一个值，不是列表，直接处理
+	// If the obtained value is a single value, not a list, process directly
 	if len(fieldValues) == 1 {
 		fieldValue := fieldValues[0]
 		switch condition.Operator {
@@ -138,7 +136,7 @@ func matchCondition(resource unstructured.Unstructured, condition kom.Condition)
 			}
 		case "!=":
 			if compareValue(fieldValue, condition.Value) {
-				return false // 负向条件，找到一个匹配值即返回 false
+				return false // For negative condition, return false if a match is found
 			}
 		case "like":
 			if compareLike(fieldValue, condition.Value) {
@@ -181,22 +179,22 @@ func matchCondition(resource unstructured.Unstructured, condition kom.Condition)
 		}
 	}
 
-	// 获取到的值，是一个列表，属于yaml中的列表属性，那么需要综合思考了。
+	// If the obtained value is a list, it's a list property in yaml, so we need to think comprehensively
 
-	// 判断是正向条件还是负向条件
+	// Determine if it's a positive or negative condition
 	isNegativeCondition := condition.Operator == "!=" || condition.Operator == "not in" || condition.Operator == "not between"
 
-	// 处理每个字段值
+	// Process each field value
 	for _, fieldValue := range fieldValues {
-		// 对于负向条件（!=, not in, not between），需要确保所有值都不满足条件
+		// For negative conditions (!=, not in, not between), need to ensure all values don't meet the condition
 		switch condition.Operator {
 		case "=":
 			if !isNegativeCondition && compareValue(fieldValue, condition.Value) {
-				return true // 正向条件，找到一个值匹配即返回 true
+				return true // For positive condition, return true if any value matches
 			}
 		case "!=":
 			if isNegativeCondition && compareValue(fieldValue, condition.Value) {
-				return false // 负向条件，找到一个匹配值即返回 false
+				return false // For negative condition, return false if any value matches
 			}
 		case "like":
 			if !isNegativeCondition && compareLike(fieldValue, condition.Value) {
@@ -239,12 +237,12 @@ func matchCondition(resource unstructured.Unstructured, condition kom.Condition)
 		}
 	}
 
-	// 负向条件的情况：只有所有值都不满足条件，才认为不满足条件
+	// For negative conditions: only consider condition not met if all values don't meet the condition
 	if isNegativeCondition {
-		return true // 所有值都不满足条件，返回 true
+		return true // Return true if all values don't meet the condition
 	}
 
-	// 默认返回 false，表示没有任何一个值满足条件
+	// Default return false, indicating no value meets the condition
 	return false
 }
 

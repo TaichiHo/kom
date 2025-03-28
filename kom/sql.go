@@ -25,8 +25,8 @@ func (k *Kubectl) Resource(obj runtime.Object) *Kubectl {
 	return tx
 }
 
-// Namespace 设置命名空间 *
-// 传入*代表取所有的命名空间，等同于调用AllNamespace()方法
+// Namespace sets the namespace
+// Passing "*" means all namespaces, equivalent to calling AllNamespace()
 func (k *Kubectl) Namespace(namespaces ...string) *Kubectl {
 	tx := k.getInstance()
 	if tx.Statement.NamespaceList == nil {
@@ -39,7 +39,7 @@ func (k *Kubectl) Namespace(namespaces ...string) *Kubectl {
 			tx.Statement.AllNamespace = true
 			tx.Statement.Namespace = metav1.NamespaceAll
 		} else if ns == "" {
-			// 与kubectl 保持一致，不传表示限制在default 命名空间中
+			// Consistent with kubectl behavior: no input means default namespace
 			tx.Statement.AllNamespace = false
 			tx.Statement.Namespace = metav1.NamespaceDefault
 		} else {
@@ -50,8 +50,8 @@ func (k *Kubectl) Namespace(namespaces ...string) *Kubectl {
 	}
 	for _, ns := range namespaces {
 		if ns == "*" {
-			// 只要出现了*，那么就是所有命名空间
-			// 在使用时，如果是所有，就不用NamespaceList
+			// If "*" appears, it means all namespaces
+			// When using AllNamespace, NamespaceList is not needed
 			tx.Statement.AllNamespace = true
 			tx.Statement.NamespaceList = make([]string, 0)
 			break
@@ -157,17 +157,17 @@ func (k *Kubectl) Describe(dest interface{}) *Kubectl {
 func (k *Kubectl) List(dest interface{}, opt ...metav1.ListOptions) *Kubectl {
 	tx := k.getInstance()
 
-	// 先判断opt是否有值，没有值，不用处理了。
-	// 如果opt没有值，那么前面步骤使用WithLabelSelector，那就沿用，没用就为空。
-	// 如果opt有值，使用 opt进行合并
+	// First check if opt has values. If not, no processing needed.
+	// If opt has no value and WithLabelSelector was used before, keep using it. If not used, keep empty.
+	// If opt has values, merge them
 	if opt != nil && len(opt) >= 0 {
-		// 之前步骤可能使用WithLabelSelector 设置了option
+		// Previous steps might have set options using WithLabelSelector
 		if len(tx.Statement.ListOptions) == 0 {
-			// 之前也没有设置值，那么直接使用opt
+			// No previous values set, use opt directly
 			tx.Statement.ListOptions = opt
 		} else {
-			// 之前有值，需要合并值
-			// 之前的值只可能是在selector，所以应该以现在的opt为基准，合并之前opt的selector
+			// Previous values exist, need to merge
+			// Previous values can only be in selector, so use current opt as base and merge previous opt's selector
 			preOpt := tx.Statement.ListOptions[0]
 			currentOpt := opt[0]
 			currentOpt.LabelSelector = mergeSelectors(preOpt.LabelSelector, currentOpt.LabelSelector)
@@ -182,7 +182,7 @@ func (k *Kubectl) List(dest interface{}, opt ...metav1.ListOptions) *Kubectl {
 	return tx
 }
 
-// 合并两个选择器，使用逗号分隔
+// Merge two selectors using comma as separator
 func mergeSelectors(selector1, selector2 string) string {
 	if selector1 != "" && selector2 != "" {
 		return fmt.Sprintf("%s,%s", selector1, selector2)

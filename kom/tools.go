@@ -18,27 +18,27 @@ func (u *tools) ClearCache() {
 	u.kubectl.ClusterCache().Clear()
 }
 
-// ConvertRuntimeObjectToTypedObject 是一个通用的转换函数，将 runtime.Object 转换为指定的目标类型
+// ConvertRuntimeObjectToTypedObject is a generic conversion function that converts a runtime.Object to a specified target type
 func (u *tools) ConvertRuntimeObjectToTypedObject(obj runtime.Object, target interface{}) error {
-	// 将 obj 断言为 *unstructured.Unstructured 类型
+	// Assert obj as *unstructured.Unstructured type
 	unstructuredObj, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		return fmt.Errorf("无法将对象转换为 *unstructured.Unstructured 类型")
+		return fmt.Errorf("unable to convert object to *unstructured.Unstructured type")
 	}
 
-	// 使用 DefaultUnstructuredConverter 将 unstructured 数据转换为具体类型
+	// Use DefaultUnstructuredConverter to convert unstructured data to concrete type
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObj.Object, target)
 	if err != nil {
-		return fmt.Errorf("无法将对象转换为目标类型: %v", err)
+		return fmt.Errorf("unable to convert object to target type: %v", err)
 	}
 
 	return nil
 }
 func (u *tools) ConvertRuntimeObjectToUnstructuredObject(obj runtime.Object) (*unstructured.Unstructured, error) {
-	// 将 obj 断言为 *unstructured.Unstructured 类型
+	// Assert obj as *unstructured.Unstructured type
 	unstructuredObj, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		return nil, fmt.Errorf("无法将对象转换为 *unstructured.Unstructured 类型")
+		return nil, fmt.Errorf("unable to convert object to *unstructured.Unstructured type")
 	}
 
 	return unstructuredObj, nil
@@ -52,7 +52,7 @@ func (u *tools) GetGVRByGVK(gvk schema.GroupVersionKind) (gvr schema.GroupVersio
 			gvr = schema.GroupVersionResource{
 				Group:    resource.Group,
 				Version:  resource.Version,
-				Resource: resource.Name, // 通常是 Kind 的复数形式
+				Resource: resource.Name, // Usually the plural form of Kind
 			}
 			return gvr, resource.Namespaced
 		}
@@ -60,10 +60,10 @@ func (u *tools) GetGVRByGVK(gvk schema.GroupVersionKind) (gvr schema.GroupVersio
 	return schema.GroupVersionResource{}, false
 }
 
-// getGVR 返回对应 string 的 GroupVersionResource
-// 从k8s API接口中获取的值
-// 如果同时存在多个version，则返回第一个
-// 因此也有可能version不对
+// GetGVRByKind returns the GroupVersionResource for the corresponding string
+// Gets values from k8s API interface
+// If multiple versions exist simultaneously, returns the first one
+// Therefore the version might not be correct
 func (u *tools) GetGVRByKind(kind string) (gvr schema.GroupVersionResource, namespaced bool) {
 	apiResources := u.kubectl.Status().APIResources()
 	for _, resource := range apiResources {
@@ -72,7 +72,7 @@ func (u *tools) GetGVRByKind(kind string) (gvr schema.GroupVersionResource, name
 			gvr = schema.GroupVersionResource{
 				Group:    resource.Group,
 				Version:  version,
-				Resource: resource.Name, // 通常是 Kind 的复数形式
+				Resource: resource.Name, // Usually the plural form of Kind
 			}
 			return gvr, resource.Namespaced
 		}
@@ -80,18 +80,18 @@ func (u *tools) GetGVRByKind(kind string) (gvr schema.GroupVersionResource, name
 	return schema.GroupVersionResource{}, false
 }
 
-// IsBuiltinResource 检查给定的资源种类是否为内置资源。
-// 该函数通过遍历apiResources列表，对比每个列表项的Kind属性与给定的kind参数是否匹配。
-// 如果找到匹配项，即表明该资源种类是内置资源，函数返回true；否则，返回false。
-// 此函数主要用于资源种类的快速校验，以确定资源是否属于预定义的内置类型。
+// IsBuiltinResource checks if the given resource kind is a built-in resource.
+// This function works by iterating through the apiResources list and comparing each item's Kind property with the given kind parameter.
+// If a match is found, indicating the resource kind is built-in, the function returns true; otherwise, it returns false.
+// This function is primarily used for quick validation of resource kinds to determine if they belong to predefined built-in types.
 //
-// 参数:
+// Parameters:
 //
-//	kind (string): 要检查的资源种类的名称。
+//	kind (string): The name of the resource kind to check.
 //
-// 返回值:
+// Returns:
 //
-//	bool: 如果kind是内置资源种类之一，则返回true；否则返回false。
+//	bool: Returns true if kind is one of the built-in resource kinds; otherwise returns false.
 func (u *tools) IsBuiltinResource(kind string) bool {
 	apiResources := u.kubectl.Status().APIResources()
 	for _, list := range apiResources {
@@ -126,7 +126,7 @@ func (u *tools) GetCRD(kind string, group string) (*unstructured.Unstructured, e
 	return nil, fmt.Errorf("crd %s.%s not found", kind, group)
 }
 
-// GetGVKFromObj 获取对象的 GroupVersionKind
+// GetGVKFromObj gets the GroupVersionKind from an object
 func (u *tools) GetGVKFromObj(obj interface{}) (schema.GroupVersionKind, error) {
 	switch o := obj.(type) {
 	case *unstructured.Unstructured:
@@ -134,12 +134,12 @@ func (u *tools) GetGVKFromObj(obj interface{}) (schema.GroupVersionKind, error) 
 	case runtime.Object:
 		return o.GetObjectKind().GroupVersionKind(), nil
 	default:
-		return schema.GroupVersionKind{}, fmt.Errorf("不支持的类型%v", o)
+		return schema.GroupVersionKind{}, fmt.Errorf("unsupported type %v", o)
 	}
 }
 
 func (u *tools) GetGVRFromCRD(crd *unstructured.Unstructured) schema.GroupVersionResource {
-	// 提取 GVR
+	// Extract GVR
 	group := crd.Object["spec"].(map[string]interface{})["group"].(string)
 	version := crd.Object["spec"].(map[string]interface{})["versions"].([]interface{})[0].(map[string]interface{})["name"].(string)
 	resource := crd.Object["spec"].(map[string]interface{})["names"].(map[string]interface{})["plural"].(string)
@@ -153,19 +153,19 @@ func (u *tools) GetGVRFromCRD(crd *unstructured.Unstructured) schema.GroupVersio
 }
 
 func (u *tools) ParseGVK2GVR(gvks []schema.GroupVersionKind, versions ...string) (gvr schema.GroupVersionResource, namespaced bool) {
-	// 获取单个GVK
+	// Get single GVK
 	gvk := u.GetGVK(gvks, versions...)
 
-	// 获取GVR
+	// Get GVR
 	if u.IsBuiltinResource(gvk.Kind) {
-		// 内置资源
+		// Built-in resource
 		return u.GetGVRByKind(gvk.Kind)
 	} else {
 		crd, err := u.GetCRD(gvk.Kind, gvk.Group)
 		if err != nil {
 			return
 		}
-		// 检查CRD是否是Namespaced
+		// Check if CRD is Namespaced
 		namespaced = crd.Object["spec"].(map[string]interface{})["scope"].(string) == "Namespaced"
 		gvr = u.GetGVRFromCRD(crd)
 	}
@@ -178,7 +178,7 @@ func (u *tools) GetGVK(gvks []schema.GroupVersionKind, versions ...string) (gvk 
 		return schema.GroupVersionKind{}
 	}
 	if len(versions) > 0 {
-		// 指定了版本
+		// Version specified
 		v := versions[0]
 		for _, g := range gvks {
 			if g.Version == v {
@@ -190,7 +190,7 @@ func (u *tools) GetGVK(gvks []schema.GroupVersionKind, versions ...string) (gvk 
 			}
 		}
 	} else {
-		// 取第一个
+		// Take the first one
 		return schema.GroupVersionKind{
 			Kind:    gvks[0].Kind,
 			Group:   gvks[0].Group,
@@ -200,58 +200,58 @@ func (u *tools) GetGVK(gvks []schema.GroupVersionKind, versions ...string) (gvk 
 	return
 }
 
-// FindGVKByTableNameInApiResources 从 APIResource 列表中查找表名对应的 GVK
-// APIResource 包含了CRD的内容
+// FindGVKByTableNameInApiResources finds the corresponding GVK from the APIResource list for a table name
+// APIResource includes CRD content
 func (u *tools) FindGVKByTableNameInApiResources(tableName string) *schema.GroupVersionKind {
 
 	for _, resource := range u.kubectl.parentCluster().apiResources {
-		// 比较表名和资源名 (Name) 或 Kind
+		// Compare table name with resource Name or Kind
 		if resource.Name == tableName || resource.Kind == tableName || resource.SingularName == tableName ||
 			slice.Contain(resource.ShortNames, tableName) {
-			// 构建 GroupVersionKind 并返回
+			// Build and return GroupVersionKind
 			return &schema.GroupVersionKind{
-				Group:   resource.Group,   // API 组
-				Version: resource.Version, // 版本
+				Group:   resource.Group,   // API group
+				Version: resource.Version, // Version
 				Kind:    resource.Kind,    // Kind
 			}
 		}
 	}
-	return nil // 没有匹配的资源
+	return nil // No matching resource found
 }
 
-// FindGVKByTableNameInCRDList 从CRD列表中找到对应的表名的GVK
+// FindGVKByTableNameInCRDList finds the corresponding GVK from the CRD list for a table name
 func (u *tools) FindGVKByTableNameInCRDList(tableName string) *schema.GroupVersionKind {
 
 	for _, crd := range u.kubectl.parentCluster().crdList {
-		// 从 CRD 对象中获取 "spec" 下的 names 字段
+		// Get the names field under "spec" from the CRD object
 		specNames, found, err := unstructured.NestedMap(crd.Object, "spec", "names")
 		if err != nil || !found {
-			continue // 如果 spec.names 不存在，跳过当前 CRD
+			continue // Skip current CRD if spec.names doesn't exist
 		}
 
-		// 提取 kind 和 plural
+		// Extract kind and plural
 		kind, _ := specNames["kind"].(string)
 		plural, _ := specNames["plural"].(string)
 		singular, _ := specNames["singular"].(string)
 		shortNames, _, _ := unstructured.NestedStringSlice(crd.Object, "spec", "names", "shortNames")
 
-		// 比较 tableName 是否匹配 kind 或 plural
+		// Compare if tableName matches kind or plural
 		if tableName == kind || tableName == plural || tableName == singular || slice.Contain(shortNames, tableName) {
-			// 提取 group 和 version
+			// Extract group and version
 			group, _, _ := unstructured.NestedString(crd.Object, "spec", "group")
 			versions, found, _ := unstructured.NestedSlice(crd.Object, "spec", "versions")
 			if !found || len(versions) == 0 {
 				continue
 			}
 
-			// 获取第一个版本的 name 字段
+			// Get the name field of the first version
 			versionMap, ok := versions[0].(map[string]interface{})
 			if !ok {
 				continue
 			}
 			version, _ := versionMap["name"].(string)
 
-			// 返回 GVK
+			// Return GVK
 			return &schema.GroupVersionKind{
 				Group:   group,
 				Version: version,
@@ -259,11 +259,11 @@ func (u *tools) FindGVKByTableNameInCRDList(tableName string) *schema.GroupVersi
 			}
 		}
 	}
-	return nil // 未找到匹配项
+	return nil // No match found
 }
 func (u *tools) ListAvailableTableNames() (names []string) {
 	for _, resource := range u.kubectl.parentCluster().apiResources {
-		// 比较表名和资源名 (Name) 或 Kind
+		// Compare table name with resource Name or Kind
 		names = append(names, strings.ToLower(resource.Kind))
 		for _, name := range resource.ShortNames {
 			names = append(names, name)

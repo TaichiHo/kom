@@ -10,7 +10,7 @@ type ResourceInfo struct {
 }
 
 var resourceMap = map[string]ResourceInfo{
-	// 命名空间级别资源
+	// Namespace-level resources
 	"pod":                            {Group: "", Version: "v1", Kind: "Pod", Namespaced: true},
 	"deployment":                     {Group: "apps", Version: "v1", Kind: "Deployment", Namespaced: true},
 	"statefulset":                    {Group: "apps", Version: "v1", Kind: "StatefulSet", Namespaced: true},
@@ -39,7 +39,7 @@ var resourceMap = map[string]ResourceInfo{
 	"validatingwebhookconfiguration": {Group: "admissionregistration.k8s.io", Version: "v1", Kind: "ValidatingWebhookConfiguration", Namespaced: false},
 }
 
-// GetResourceInfo 根据资源类型字符串返回资源信息
+// GetResourceInfo returns resource information based on the resource type string
 func GetResourceInfo(resourceType string) (ResourceInfo, bool) {
 	resourceType = strings.ToLower(resourceType)
 	if info, exists := resourceMap[resourceType]; exists {
@@ -48,7 +48,7 @@ func GetResourceInfo(resourceType string) (ResourceInfo, bool) {
 	return ResourceInfo{}, false
 }
 
-// IsNamespaced 判断资源是否为命名空间级别
+// IsNamespaced determines if a resource is namespace-scoped
 func IsNamespaced(resourceType string) bool {
 	resourceType = strings.ToLower(resourceType)
 	if info, exists := resourceMap[resourceType]; exists {

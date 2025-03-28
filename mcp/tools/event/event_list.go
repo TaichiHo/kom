@@ -14,24 +14,24 @@ import (
 func ListEventResource() mcp.Tool {
 	return mcp.NewTool(
 		"list_k8s_event",
-		mcp.WithDescription("List Kubernetes events by cluster and namespace / 按集群和命名空间列出Kubernetes事件"),
-		mcp.WithString("cluster", mcp.Description("Cluster where the events are running (use empty string for default cluster) / 运行事件的集群（使用空字符串表示默认集群）")),
-		mcp.WithString("namespace", mcp.Description("Namespace of the events (optional) / 事件所在的命名空间（可选）")),
-		mcp.WithString("involvedObjectName", mcp.Description("Filter events by involved object name / 按涉及对象名称过滤事件")),
+		mcp.WithDescription("List Kubernetes events by cluster and namespace"),
+		mcp.WithString("cluster", mcp.Description("Cluster where the events are running (use empty string for default cluster)")),
+		mcp.WithString("namespace", mcp.Description("Namespace of the events (optional)")),
+		mcp.WithString("involvedObjectName", mcp.Description("Filter events by involved object name")),
 	)
 }
 
 func ListEventResourceHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	// 获取资源元数据
+	// Get resource metadata
 	meta, err := metadata.ParseFromRequest(request)
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取标签选择器和涉及对象名称
+	// Get label selector and involved object name
 	involvedObjectName, _ := request.Params.Arguments["involvedObjectName"].(string)
 
-	// 获取事件列表
+	// Get event list
 	var list []*v1.Event
 	kubectl := kom.Cluster(meta.Cluster).WithContext(ctx).CRD("events.k8s.io", "v1", "Event").Namespace(meta.Namespace).RemoveManagedFields()
 	if meta.Namespace == "" {

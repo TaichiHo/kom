@@ -16,25 +16,25 @@ func GetLogs(k *kom.Kubectl) error {
 	options.Container = stmt.ContainerName
 	ctx := stmt.Context
 
-	// 如果只有一个容器，是可以不设置的
+	// If there's only one container, it doesn't need to be set
 	// if stmt.ContainerName == "" {
-	// 	return fmt.Errorf("请调用ContainerName()方法设置Pod容器名称")
+	// 	return fmt.Errorf("Please call ContainerName() method to set Pod container name")
 	// }
 
-	// 使用反射获取 dest 的值
+	// Use reflection to get the value of dest
 	destValue := reflect.ValueOf(stmt.Dest)
 
-	// 确保 dest 是一个指针
+	// Ensure dest is a pointer
 	if destValue.Kind() != reflect.Ptr {
-		// 处理错误：dest 不是指向切片的指针
-		return fmt.Errorf("目标容器必须是指针类型")
+		// Handle error: dest is not a pointer
+		return fmt.Errorf("Target container must be a pointer type")
 	}
 
 	stream, err := k.Client().CoreV1().Pods(ns).GetLogs(name, options).Stream(ctx)
 	if err != nil {
 		return err
 	}
-	// 将流赋值给 dest
+	// Assign stream to dest
 	destValue.Elem().Set(reflect.ValueOf(stream))
 	return nil
 }

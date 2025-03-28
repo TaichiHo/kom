@@ -25,18 +25,18 @@ func ExecuteCommand(k *kom.Kubectl) error {
 	ctx := stmt.Context
 
 	if stmt.ContainerName == "" {
-		return fmt.Errorf("请调用ContainerName()方法设置Pod容器名称")
+		return fmt.Errorf("Please call ContainerName() method to set Pod container name")
 	}
 	if stmt.Command == "" {
-		return fmt.Errorf("请调用Command()方法设置命令")
+		return fmt.Errorf("Please call Command() method to set command")
 	}
 
-	// 反射检查
+	// Reflection check
 	destValue := reflect.ValueOf(stmt.Dest)
 
-	// 确保 dest 是一个指向字节切片的指针
+	// Ensure dest is a pointer to a byte slice
 	if !(destValue.Kind() == reflect.Ptr && destValue.Elem().Kind() == reflect.Slice) || destValue.Elem().Type().Elem().Kind() != reflect.Uint8 {
-		return fmt.Errorf("请确保dest 是一个指向字节切片的指针。定义var s []byte 使用&s")
+		return fmt.Errorf("Please ensure dest is a pointer to a byte slice. Define var s []byte and use &s")
 	}
 
 	var err error
@@ -83,14 +83,14 @@ func ExecuteCommand(k *kom.Kubectl) error {
 		s := errBuf.String()
 		klog.V(8).Infof("Error executing command: %v", err)
 		if strings.Contains(s, "Invalid argument") {
-			return fmt.Errorf("系统参数错误 %v", s)
+			return fmt.Errorf("System parameter error: %v", s)
 		}
 		return fmt.Errorf("error executing command: %v %v", err, s)
 	}
 
-	// 将结果写入 tx.Statement.Dest
+	// Write result to tx.Statement.Dest
 	if destBytes, ok := k.Statement.Dest.(*[]byte); ok {
-		// 直接使用 outBuf.Bytes() 赋值
+		// Directly assign using outBuf.Bytes()
 		*destBytes = outBuf.Bytes()
 		klog.V(8).Infof("Execute result %s", *destBytes)
 	} else {

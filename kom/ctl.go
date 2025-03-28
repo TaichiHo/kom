@@ -75,9 +75,9 @@ func (c *ctl) Scaler() *scale {
 	}
 }
 
-// Label 更新label
-// 新增label : x=y
-// 删除label : x-
+// Label updates labels
+// Add label: x=y
+// Delete label: x-
 func (c *ctl) Label(str string) error {
 	item := &label{
 		kubectl: c.kubectl,
@@ -85,9 +85,9 @@ func (c *ctl) Label(str string) error {
 	return item.Label(str)
 }
 
-// Annotate 更新annotation
-// 新增annotation : x=y
-// 删除annotation : x-
+// Annotate updates annotations
+// Add annotation: x=y
+// Delete annotation: x-
 func (c *ctl) Annotate(str string) error {
 	item := &annotate{
 		kubectl: c.kubectl,

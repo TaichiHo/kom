@@ -21,10 +21,10 @@ func StreamExecuteCommand(k *kom.Kubectl) error {
 	ctx := stmt.Context
 
 	if stmt.ContainerName == "" {
-		return fmt.Errorf("请调用ContainerName()方法设置Pod容器名称")
+		return fmt.Errorf("Please call ContainerName() method to set Pod container name")
 	}
 	if stmt.Command == "" {
-		return fmt.Errorf("请调用Command()方法设置命令")
+		return fmt.Errorf("Please call Command() method to set command")
 	}
 
 	var err error
@@ -55,7 +55,7 @@ func StreamExecuteCommand(k *kom.Kubectl) error {
 		return fmt.Errorf("error creating executor: %v", err)
 	}
 
-	// 使用 io.Pipe 实现 Stdout 和 Stderr 的实时流式处理
+	// Use io.Pipe to implement real-time streaming of Stdout and Stderr
 	stdoutPr, stdoutPw := io.Pipe()
 	stderrPr, stderrPw := io.Pipe()
 	defer stdoutPr.Close()
@@ -63,7 +63,7 @@ func StreamExecuteCommand(k *kom.Kubectl) error {
 	defer stdoutPw.Close()
 	defer stderrPw.Close()
 
-	// Goroutine 处理 Stdout
+	// Goroutine to handle Stdout
 	go func() {
 		scanner := bufio.NewScanner(stdoutPr)
 		for scanner.Scan() {
@@ -79,7 +79,7 @@ func StreamExecuteCommand(k *kom.Kubectl) error {
 		}
 	}()
 
-	// Goroutine 处理 Stderr
+	// Goroutine to handle Stderr
 	go func() {
 		scanner := bufio.NewScanner(stderrPr)
 		for scanner.Scan() {
@@ -96,15 +96,15 @@ func StreamExecuteCommand(k *kom.Kubectl) error {
 	}()
 
 	options := &remotecommand.StreamOptions{
-		Stdout: stdoutPw, // 将输出写入 Stdout 的 PipeWriter
-		Stderr: stderrPw, // 将错误写入 Stderr 的 PipeWriter
+		Stdout: stdoutPw, // Write output to Stdout's PipeWriter
+		Stderr: stderrPw, // Write errors to Stderr's PipeWriter
 		Tty:    false,
 	}
 	if stmt.Stdin != nil {
 		options.Stdin = stmt.Stdin
 	}
 
-	// 开始流式执行
+	// Start streaming execution
 	err = executor.StreamWithContext(ctx, *options)
 	if err != nil {
 		klog.V(8).Infof("Error Stream executing command: %v", err)

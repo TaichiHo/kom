@@ -17,7 +17,7 @@ func RegisterDefaultCallbacks(c *kom.ClusterInst) func() {
 
 	klog.V(4).Infof("RegisterDefaultCallbacks for cluster %s", c.ID)
 
-	// 为每一个集群进行注册
+	// Register for each cluster
 	k := c.Kubectl
 
 	queryCallback := k.Callback().Get()

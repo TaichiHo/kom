@@ -14,7 +14,7 @@ type annotate struct {
 func (a *annotate) Annotate(s string) error {
 	annotateStr := ""
 	if strings.HasSuffix(s, "-") {
-		// 删除label的情况
+		// Case when deleting a label
 		annotateStr = fmt.Sprintf(`{"%s":null}`, strings.TrimSuffix(s, "-"))
 	} else {
 		if !strings.Contains(s, "=") {
@@ -24,7 +24,7 @@ func (a *annotate) Annotate(s string) error {
 		if len(parts) != 2 {
 			return fmt.Errorf("invalid annotate format (must k=v)")
 		}
-		// 构建map
+		// Build map
 		annotateStr = fmt.Sprintf(`{"%s":"%s"}`, strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
 	}
 

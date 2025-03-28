@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/gnostic-models/openapiv2"
+	openapi_v2 "github.com/google/gnostic-models/openapiv2"
 	"github.com/weibaohui/kom/kom/describe"
 	"github.com/weibaohui/kom/kom/doc"
 	"github.com/weibaohui/kom/utils"
@@ -45,7 +45,7 @@ func (s *status) OpenAPISchema() *openapi_v2.Document {
 	return cluster.openAPISchema
 }
 
-// 获取版本信息
+// Get version information
 func (k *Kubectl) initializeServerVersion() *version.Info {
 	versionInfo, err := k.Client().Discovery().ServerVersion()
 	if err != nil {
@@ -75,7 +75,7 @@ func (k *Kubectl) initializeCRDList(ttl time.Duration) []*unstructured.Unstructu
 
 }
 func (k *Kubectl) initializeAPIResources() (apiResources []*metav1.APIResource) {
-	// 提取ApiResources
+	// Extract ApiResources
 	_, lists, _ := k.Client().Discovery().ServerGroupsAndResources()
 	for _, list := range lists {
 		resources := list.APIResources
@@ -87,7 +87,7 @@ func (k *Kubectl) initializeAPIResources() (apiResources []*metav1.APIResource) 
 			group = gvs[0]
 			ver = gvs[1]
 		} else {
-			// 只有version的情况"v1"
+			// Case with only version "v1"
 			ver = groupVersion
 		}
 

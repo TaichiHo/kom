@@ -14,7 +14,7 @@ type storageClass struct {
 	kubectl *Kubectl
 }
 
-// PVCCount 统计PVC数量
+// PVCCount counts the number of PVCs
 func (s *storageClass) PVCCount() (int, error) {
 	var pvcList []*v1.PersistentVolumeClaim
 	err := s.kubectl.newInstance().
@@ -31,7 +31,7 @@ func (s *storageClass) PVCCount() (int, error) {
 	return len(pvcList), nil
 }
 
-// PVCount 统计PV数量
+// PVCount counts the number of PVs
 func (s *storageClass) PVCount() (int, error) {
 	var pvList []*v1.PersistentVolume
 	err := s.kubectl.newInstance().
@@ -47,7 +47,7 @@ func (s *storageClass) PVCount() (int, error) {
 	return len(pvList), nil
 }
 
-// SetDefault 设置为默认存储类
+// SetDefault sets this storage class as the default
 func (s *storageClass) SetDefault() error {
 	var scList []*storagev1.StorageClass
 	err := s.kubectl.newInstance().
@@ -62,12 +62,12 @@ func (s *storageClass) SetDefault() error {
 	}
 	for _, sc := range scList {
 		patchData := ""
-		// 如果注解中包含默认的注解
+		// If the annotation contains the default annotation
 		if storage.IsDefaultAnnotationText(sc.ObjectMeta) == "Yes" {
 			patchData = fmt.Sprintf(`{"metadata": {"annotations": {"%s": null}}}`, storage.IsDefaultStorageClassAnnotation)
 		}
 
-		// 如果名字相符，增加注解
+		// If the name matches, add annotation
 		if sc.Name == s.kubectl.Statement.Name {
 			patchData = fmt.Sprintf(`{"metadata": {"annotations": {"%s": "true"}}}`, storage.IsDefaultStorageClassAnnotation)
 		}

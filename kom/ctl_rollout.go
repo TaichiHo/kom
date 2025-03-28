@@ -16,7 +16,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// rollout支持的资源类型
+// Resource types supported by rollout
 var rolloutSupportedKinds = []string{"Deployment", "StatefulSet", "DaemonSet", "ReplicaSet"}
 
 type rollout struct {
@@ -91,34 +91,34 @@ func (d *rollout) Resume() error {
 }
 
 // Status
-// 通用字段提取：
+// Common field extraction:
 //
-// spec.replicas：期望的副本数。
-// status.replicas：当前实际运行的副本数。
-// status.updatedReplicas：已更新为最新版本的副本数。
-// status.readyReplicas：通过健康检查并准备好服务的副本数。
-// status.unavailableReplicas：当前不可用的副本数。
+// spec.replicas: Desired number of replicas.
+// status.replicas: Current number of running replicas.
+// status.updatedReplicas: Number of replicas updated to latest version.
+// status.readyReplicas: Number of replicas that passed health checks and are ready to serve.
+// status.unavailableReplicas: Number of currently unavailable replicas.
 // Deployment:
 //
-// 完成条件：updatedReplicas == spec.replicas，且 readyReplicas == spec.replicas，并且 unavailableReplicas == 0。
+// Completion conditions: updatedReplicas == spec.replicas, readyReplicas == spec.replicas, and unavailableReplicas == 0.
 // StatefulSet:
 //
-// 完成条件：updatedReplicas == spec.replicas 且 readyReplicas == spec.replicas。
+// Completion conditions: updatedReplicas == spec.replicas and readyReplicas == spec.replicas.
 // DaemonSet:
 //
-// 特有字段：
-// status.desiredNumberScheduled：期望调度的节点数。
-// status.updatedNumberScheduled：已更新的节点数。
-// status.numberReady：健康且就绪的节点数。
-// status.numberUnavailable：不可用的节点数。
-// 完成条件：updatedNumberScheduled == desiredNumberScheduled，且 numberReady == desiredNumberScheduled，并且 numberUnavailable == 0。
+// Specific fields:
+// status.desiredNumberScheduled: Number of nodes that should run the daemon pod.
+// status.updatedNumberScheduled: Number of nodes that are running the updated daemon pod.
+// status.numberReady: Number of nodes that are running the daemon pod and are ready.
+// status.numberUnavailable: Number of nodes that are running the daemon pod but are not ready.
+// Completion conditions: updatedNumberScheduled == desiredNumberScheduled, numberReady == desiredNumberScheduled, and numberUnavailable == 0.
 // ReplicaSet:
 //
-// 完成条件：readyReplicas == spec.replicas。
-// 返回状态：
+// Completion conditions: readyReplicas == spec.replicas.
+// Return status:
 //
-// 滚动更新完成时，返回成功消息。
-// 更新中返回进度信息。
+// Returns success message when rollout is complete.
+// Returns progress information when update is in progress.
 func (d *rollout) Status() (string, error) {
 	kind := d.kubectl.Statement.GVK.Kind
 	d.logInfo("Status")
@@ -133,7 +133,7 @@ func (d *rollout) Status() (string, error) {
 		return "", d.handleError(kind, d.kubectl.Statement.Namespace, d.kubectl.Statement.Name, "status", err)
 	}
 
-	// 提取 replicas 配置
+	// Extract replicas configuration
 	specReplicas, _, _ := unstructured.NestedInt64(item.Object, "spec", "replicas")
 	updatedReplicas, _, _ := unstructured.NestedInt64(item.Object, "status", "updatedReplicas")
 	readyReplicas, _, _ := unstructured.NestedInt64(item.Object, "status", "readyReplicas")
@@ -141,14 +141,14 @@ func (d *rollout) Status() (string, error) {
 
 	switch kind {
 	case "Deployment":
-		// 判断 Deployment 是否完成滚动更新
+		// Check if Deployment rollout is complete
 		if updatedReplicas == specReplicas && readyReplicas == specReplicas && unavailableReplicas == 0 {
 			return "Deployment successfully rolled out", nil
 		}
 		return fmt.Sprintf("Deployment rollout in progress: %d of %d updated, %d ready", updatedReplicas, specReplicas, readyReplicas), nil
 
 	case "StatefulSet":
-		// 判断 StatefulSet 是否完成滚动更新
+		// Check if StatefulSet rollout is complete
 		if updatedReplicas == specReplicas && readyReplicas == specReplicas {
 			return "StatefulSet successfully rolled out", nil
 		}
@@ -160,14 +160,14 @@ func (d *rollout) Status() (string, error) {
 		numberReady, _, _ := unstructured.NestedInt64(item.Object, "status", "numberReady")
 		numberUnavailable, _, _ := unstructured.NestedInt64(item.Object, "status", "numberUnavailable")
 
-		// 判断 DaemonSet 是否完成滚动更新
+		// Check if DaemonSet rollout is complete
 		if updatedNumberScheduled == desiredNumberScheduled && numberReady == desiredNumberScheduled && numberUnavailable == 0 {
 			return "DaemonSet successfully rolled out", nil
 		}
 		return fmt.Sprintf("DaemonSet rollout in progress: %d of %d updated, %d ready", updatedNumberScheduled, desiredNumberScheduled, numberReady), nil
 
 	case "ReplicaSet":
-		// 判断 ReplicaSet 是否完成滚动更新
+		// Check if ReplicaSet rollout is complete
 		if readyReplicas == specReplicas {
 			return "ReplicaSet successfully rolled out", nil
 		}
@@ -199,7 +199,7 @@ func (d *rollout) History() ([]RolloutHistory, error) {
 	ns := d.kubectl.Statement.Namespace
 	d.logInfo("History")
 
-	// 校验是否是支持的资源类型
+	// Check if the resource type is supported
 	if err := d.checkResourceKind(kind, []string{"Deployment", "StatefulSet", "DaemonSet"}); err != nil {
 		return nil, err
 	}
@@ -212,23 +212,23 @@ func (d *rollout) History() ([]RolloutHistory, error) {
 
 	switch kind {
 	case "Deployment":
-		// 获取 Deployment 的 spec.selector.matchLabels
+		// Get Deployment's spec.selector.matchLabels
 		labels, found, err := unstructured.NestedMap(item.Object, "spec", "selector", "matchLabels")
 		if err != nil || !found {
 			return nil, fmt.Errorf("failed to get matchLabels from Deployment: %s/%s %v", ns, name, err)
 		}
 
-		// 构造 labelSelector 字符串，将所有标签拼接起来
+		// Construct labelSelector string by concatenating all labels
 		labelSelector := ""
 		for key, value := range labels {
 			labelSelector += fmt.Sprintf("%s=%s,", key, value)
 		}
-		// 去除最后一个逗号
+		// Remove the last comma
 		if len(labelSelector) > 0 {
 			labelSelector = labelSelector[:len(labelSelector)-1]
 		}
 
-		// 查询与 Deployment 关联的所有 ReplicaSet
+		// Query all ReplicaSets associated with the Deployment
 		var rsList []*v1.ReplicaSet
 
 		err = d.kubectl.newInstance().Resource(&v1.ReplicaSet{}).
@@ -245,7 +245,7 @@ func (d *rollout) History() ([]RolloutHistory, error) {
 			}
 			return false
 		})
-		// 如果没有 ReplicaSet，则没有历史
+		// If no ReplicaSets found, there's no history
 		if len(rsList) == 0 {
 			return nil, fmt.Errorf("no history found for Deployment %s/%s", ns, name)
 		}
@@ -390,7 +390,7 @@ func (d *rollout) Undo(toVersions ...int) (string, error) {
 	}
 	d.logInfo("Undo")
 
-	// 校验是否是支持的资源类型
+	// Check if the resource type is supported
 	if err := d.checkResourceKind(kind, []string{"Deployment", "DaemonSet", "StatefulSet"}); err != nil {
 		return "", err
 	}
@@ -401,7 +401,7 @@ func (d *rollout) Undo(toVersions ...int) (string, error) {
 		return "", d.handleError(kind, namespace, name, "Undo", err)
 	}
 
-	// 根据资源类型调用不同的回滚方法
+	// Call different rollback methods based on resource type
 	switch kind {
 	case "Deployment":
 		err = d.rollbackDeployment(toVersion)
@@ -433,7 +433,7 @@ func (d *rollout) rollbackDeployment(toVersion int) error {
 	}
 
 	if toVersion == 0 {
-		// 没有指定版本，则回滚到上一个版本
+		// If version not specified, rollback to previous version
 		revision, err := ExtractDeploymentRevision(deploy.Annotations)
 		if err != nil {
 			return fmt.Errorf(" rollbackDeployment get deployment revision err %v ", err)
@@ -480,22 +480,22 @@ func (d *rollout) rollbackDeployment(toVersion int) error {
 	return nil
 }
 
-// ExtractDeploymentRevision 从 annotations 中提取 deployment.kubernetes.io/revision 的值，并转换为 int
+// ExtractDeploymentRevision extracts the value of deployment.kubernetes.io/revision from annotations and converts it to int
 func ExtractDeploymentRevision(annotations map[string]string) (int, error) {
 	const revisionKey = "deployment.kubernetes.io/revision"
 
-	// 检查 annotations 是否为空
+	// Check if annotations is nil
 	if annotations == nil {
 		return 0, errors.New("annotations is nil")
 	}
 
-	// 获取 revision 的值
+	// Get revision value
 	revisionStr, exists := annotations[revisionKey]
 	if !exists {
 		return 0, fmt.Errorf("annotation %q not found", revisionKey)
 	}
 
-	// 转换为 int
+	// Convert to int
 	revision, err := strconv.Atoi(revisionStr)
 	if err != nil {
 		return 0, fmt.Errorf("failed to convert %q to int: %v", revisionStr, err)
@@ -505,10 +505,10 @@ func ExtractDeploymentRevision(annotations map[string]string) (int, error) {
 }
 
 func (d *rollout) rollbackDaemonSet(toVersion int) error {
-	// 从ControllerVersion列表中找指定版本的ControllerVersion
-	// 将Revision.Data.Raw转换为DaemonSet
-	// 提取DaemonSet的Spec.Template.Spec，赋值到原先的DaemonSet上，更新
-	// 完成回滚
+	// Find the specified version from ControllerVersion list
+	// Convert Revision.Data.Raw to DaemonSet
+	// Extract DaemonSet's Spec.Template.Spec, assign it to the original DaemonSet, update
+	// Complete rollback
 
 	kind := d.kubectl.Statement.GVK.Kind
 	name := d.kubectl.Statement.Name
@@ -528,16 +528,16 @@ func (d *rollout) rollbackDaemonSet(toVersion int) error {
 	if err != nil {
 		return fmt.Errorf("rollbackDaemonSet list controllerrevisions err %v", err)
 	}
-	// 如果没有指定版本，则回滚到上一个版本
+	// If version not specified, rollback to previous version
 	if toVersion == 0 {
-		// 查找最新的 ControllerRevision 来确定版本
-		// 找到最大的version
+		// Find the latest ControllerRevision to determine version
+		// Find the maximum version
 		var latestRevision int64 = 0
 		for _, revision := range versionList {
 			for _, owner := range revision.OwnerReferences {
 				if owner.Kind == kind && owner.Name == name {
-					// 选择目标版本为最新版本
-					// 确定最新的版本
+					// Select target version as latest version
+					// Determine the latest version
 					if revision.Revision > latestRevision {
 						latestRevision = revision.Revision
 					}
@@ -547,14 +547,14 @@ func (d *rollout) rollbackDaemonSet(toVersion int) error {
 
 		toVersion = int(latestRevision - 1)
 		if toVersion <= 0 {
-			// 做一个防护，只要是有变更，那么版本号必大于0，最小为1
+			// Add protection: if there are changes, version number must be greater than 0, minimum is 1
 			toVersion = 1
 		}
 	}
 
-	// 获取目标版本的 ControllerRevision 并提取 PodTemplateSpec
+	// Get target version's ControllerRevision and extract PodTemplateSpec
 
-	// 查找目标版本的 ControllerRevision
+	// Find target version's ControllerRevision
 	var targetRevision *v1.ControllerRevision
 
 	for _, revision := range versionList {
@@ -575,17 +575,17 @@ func (d *rollout) rollbackDaemonSet(toVersion int) error {
 		return fmt.Errorf("rollbackDaemonSet get target revision %d for %s not found", toVersion, name)
 	}
 
-	// 提取目标版本的 PodTemplateSpec
+	// Extract target version's PodTemplateSpec
 	var dsTemplate v1.DaemonSet
 	err = json.Unmarshal(targetRevision.Data.Raw, &dsTemplate)
 	if err != nil {
 		return fmt.Errorf("rollbackDaemonSet unmarshal controllerrevision data err %v", err)
 	}
 
-	// 使用目标版本的模板更新当前 DaemonSet
+	// Update current DaemonSet with target version's template
 	ds.Spec.Template.Spec = dsTemplate.Spec.Template.Spec
 
-	// 更新 DaemonSet
+	// Update DaemonSet
 	err = d.kubectl.Resource(&ds).Update(&ds).Error
 	if err != nil {
 		return fmt.Errorf("rollbackDaemonSet update daemonset err %v", err)
@@ -594,10 +594,10 @@ func (d *rollout) rollbackDaemonSet(toVersion int) error {
 	return nil
 }
 func (d *rollout) rollbackStatefulSet(toVersion int) error {
-	// 从ControllerVersion列表中找指定版本的ControllerVersion
-	// 将Revision.Data.Raw转换为DaemonSet
-	// 提取DaemonSet的Spec.Template.Spec，赋值到原先的DaemonSet上，更新
-	// 完成回滚
+	// Find the specified version from ControllerVersion list
+	// Convert Revision.Data.Raw to StatefulSet
+	// Extract StatefulSet's Spec.Template.Spec, assign it to the original StatefulSet, update
+	// Complete rollback
 
 	kind := d.kubectl.Statement.GVK.Kind
 	name := d.kubectl.Statement.Name
@@ -617,16 +617,16 @@ func (d *rollout) rollbackStatefulSet(toVersion int) error {
 	if err != nil {
 		return fmt.Errorf("rollbackStatefulSet list controllerrevisions err %v", err)
 	}
-	// 如果没有指定版本，则回滚到上一个版本
+	// If version not specified, rollback to previous version
 	if toVersion == 0 {
-		// 查找最新的 ControllerRevision 来确定版本
-		// 找到最大的version
+		// Find the latest ControllerRevision to determine version
+		// Find the maximum version
 		var latestRevision int64 = 0
 		for _, revision := range versionList {
 			for _, owner := range revision.OwnerReferences {
 				if owner.Kind == kind && owner.Name == name {
-					// 选择目标版本为最新版本
-					// 确定最新的版本
+					// Select target version as latest version
+					// Determine the latest version
 					if revision.Revision > latestRevision {
 						latestRevision = revision.Revision
 					}
@@ -636,14 +636,14 @@ func (d *rollout) rollbackStatefulSet(toVersion int) error {
 
 		toVersion = int(latestRevision - 1)
 		if toVersion <= 0 {
-			// 做一个防护，只要是有变更，那么版本号必大于0，最小为1
+			// Add protection: if there are changes, version number must be greater than 0, minimum is 1
 			toVersion = 1
 		}
 	}
 
-	// 获取目标版本的 ControllerRevision 并提取 PodTemplateSpec
+	// Get target version's ControllerRevision and extract PodTemplateSpec
 
-	// 查找目标版本的 ControllerRevision
+	// Find target version's ControllerRevision
 	var targetRevision *v1.ControllerRevision
 
 	for _, revision := range versionList {
@@ -664,20 +664,20 @@ func (d *rollout) rollbackStatefulSet(toVersion int) error {
 		return fmt.Errorf("rollbackStatefulSet get target revision %d for %s not found", toVersion, name)
 	}
 
-	// 提取目标版本的 PodTemplateSpec
+	// Extract target version's PodTemplateSpec
 	var stsTemplate v1.StatefulSet
 	err = json.Unmarshal(targetRevision.Data.Raw, &stsTemplate)
 	if err != nil {
 		return fmt.Errorf("rollbackStatefulSet unmarshal controllerrevision data err %v", err)
 	}
 
-	// 使用目标版本的模板更新当前 DaemonSet
+	// Update current StatefulSet with target version's template
 	sts.Spec.Template.Spec = stsTemplate.Spec.Template.Spec
 
-	// 更新 DaemonSet
+	// Update StatefulSet
 	err = d.kubectl.Resource(&sts).Update(&sts).Error
 	if err != nil {
-		return fmt.Errorf("rollbackStatefulSet update daemonset err %v", err)
+		return fmt.Errorf("rollbackStatefulSet update statefulset err %v", err)
 	}
 
 	return nil

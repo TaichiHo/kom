@@ -26,14 +26,14 @@ func Watch(k *kom.Kubectl) error {
 
 	destValue := reflect.ValueOf(stmt.Dest)
 
-	// 确保 dest 是一个指向接口的指针
+	// Ensure dest is a pointer to an interface
 	if destValue.Kind() != reflect.Ptr || destValue.Elem().Kind() != reflect.Interface {
-		return fmt.Errorf("stmt.Dest 必须是指向 watch.Interface 的指针")
+		return fmt.Errorf("stmt.Dest must be a pointer to watch.Interface")
 	}
 
-	// 确保 dest 的实际类型实现了 watch.Interface 接口
+	// Ensure dest's actual type implements the watch.Interface interface
 	if !destValue.Elem().Type().Implements(reflect.TypeOf((*watch.Interface)(nil)).Elem()) {
-		return fmt.Errorf("stmt.Dest 必须实现 watch.Interface 接口")
+		return fmt.Errorf("stmt.Dest must implement watch.Interface interface")
 	}
 
 	var watcher watch.Interface
@@ -41,11 +41,11 @@ func Watch(k *kom.Kubectl) error {
 
 	if namespaced {
 		if stmt.AllNamespace || len(namespaceList) > 1 {
-			// 全部命名空间 或者  传入多个命名空间
-			// client-go 不支持跨命名空间查询，就全部查出来，后面再过滤
+			// All namespaces or multiple namespaces provided
+			// client-go doesn't support cross-namespace queries, so get all and filter later
 			ns = metav1.NamespaceAll
 		} else {
-			// 不是全部，也没有传多个命名空间
+			// Not all namespaces and no multiple namespaces provided
 			if ns == "" {
 				ns = metav1.NamespaceDefault
 			}
@@ -59,7 +59,7 @@ func Watch(k *kom.Kubectl) error {
 		return err
 	}
 
-	// 将 watch 赋值给 dest
+	// Assign watcher to dest
 	destValue.Elem().Set(reflect.ValueOf(watcher))
 
 	return nil

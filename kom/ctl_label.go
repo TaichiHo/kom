@@ -14,7 +14,7 @@ type label struct {
 func (l *label) Label(s string) error {
 	labelStr := ""
 	if strings.HasSuffix(s, "-") {
-		// 删除label的情况
+		// Case when deleting a label
 		labelStr = fmt.Sprintf(`{"%s":null}`, strings.TrimSuffix(s, "-"))
 	} else {
 		if !strings.Contains(s, "=") {
@@ -24,7 +24,7 @@ func (l *label) Label(s string) error {
 		if len(parts) != 2 {
 			return fmt.Errorf("invalid label format (must k=v)")
 		}
-		// 构建map
+		// Build map
 		labelStr = fmt.Sprintf(`{"%s":"%s"}`, strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
 	}
 
