@@ -12,7 +12,7 @@ type ingressClass struct {
 	kubectl *Kubectl
 }
 
-// SetDefault 设置为默认ingress类
+// SetDefault sets as default ingress class
 func (i *ingressClass) SetDefault() error {
 	var scList []*v1.IngressClass
 	err := i.kubectl.newInstance().
@@ -27,12 +27,12 @@ func (i *ingressClass) SetDefault() error {
 	}
 	for _, sc := range scList {
 		patchData := ""
-		// 如果注解中包含默认的注解
+		// If the annotation contains the default annotation
 		if sc.Annotations != nil && sc.Annotations[v1.AnnotationIsDefaultIngressClass] != "" {
 			patchData = fmt.Sprintf(`{"metadata": {"annotations": {"%s": null}}}`, v1.AnnotationIsDefaultIngressClass)
 		}
 
-		// 如果名字相符，增加注解
+		// If the name matches, add annotation
 		if sc.Name == i.kubectl.Statement.Name {
 			patchData = fmt.Sprintf(`{"metadata": {"annotations": {"%s": "true"}}}`, v1.AnnotationIsDefaultIngressClass)
 		}

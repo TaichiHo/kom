@@ -16,11 +16,11 @@ func Update(k *kom.Kubectl) error {
 	ns := stmt.Namespace
 	ctx := stmt.Context
 
-	// 将 obj 转换为 Unstructured
+	// Convert obj to Unstructured
 	unstructuredObj := &unstructured.Unstructured{}
 	unstructuredData, err := runtime.DefaultUnstructuredConverter.ToUnstructured(stmt.Dest)
 	if err != nil {
-		return err // 处理转换错误
+		return err // Handle conversion error
 	}
 
 	unstructuredObj.SetUnstructuredContent(unstructuredData)
@@ -44,7 +44,7 @@ func Update(k *kom.Kubectl) error {
 	if stmt.RemoveManagedFields {
 		utils.RemoveManagedFields(res)
 	}
-	// 将 unstructured 转换回原始对象
+	// Convert unstructured back to original object
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(res.Object, stmt.Dest)
 	if err != nil {
 		return err

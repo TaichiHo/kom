@@ -9,7 +9,7 @@ import (
 	resourcehelper "k8s.io/kubectl/pkg/util/resource"
 )
 
-// ResourceUsage 获取节点的资源使用情况，包括资源的请求和限制，还有当前使用占比
+// ResourceUsage gets the resource usage of a node, including resource requests and limits, and current usage percentages
 func (p *pod) ResourceUsage() *ResourceUsageResult {
 
 	var inst *v1.Pod

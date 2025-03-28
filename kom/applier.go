@@ -22,10 +22,10 @@ func (a *applier) Apply(str string) (result []string) {
 		if strings.TrimSpace(doc) == "" {
 			continue
 		}
-		// 解析 YAML 到 Unstructured 对象
+		// Parse YAML to Unstructured object
 		var obj unstructured.Unstructured
 		if err := yaml.Unmarshal([]byte(doc), &obj.Object); err != nil {
-			result = append(result, fmt.Sprintf("YAML 解析失败: %v", err))
+			result = append(result, fmt.Sprintf("YAML parsing failed: %v", err))
 			continue
 		}
 		result = append(result, a.createOrUpdateCRD(&obj))
@@ -40,10 +40,10 @@ func (a *applier) Delete(str string) (result []string) {
 		if strings.TrimSpace(doc) == "" {
 			continue
 		}
-		// 解析 YAML 到 Unstructured 对象
+		// Parse YAML to Unstructured object
 		var obj unstructured.Unstructured
 		if err := yaml.Unmarshal([]byte(doc), &obj.Object); err != nil {
-			result = append(result, fmt.Sprintf("YAML 解析失败: %v", err))
+			result = append(result, fmt.Sprintf("YAML parsing failed: %v", err))
 			continue
 		}
 		result = append(result, a.deleteCRD(&obj))
@@ -52,10 +52,10 @@ func (a *applier) Delete(str string) (result []string) {
 	return result
 }
 func (a *applier) createOrUpdateCRD(obj *unstructured.Unstructured) string {
-	// 提取 Group, Version, Kind
+	// Extract Group, Version, Kind
 	gvk := obj.GroupVersionKind()
 	if gvk.Kind == "" || gvk.Version == "" {
-		return fmt.Sprintf("YAML 缺少必要的 Group, Version 或 Kind")
+		return fmt.Sprintf("YAML missing required Group, Version or Kind")
 	}
 
 	_, namespaced := a.kubectl.Tools().ParseGVK2GVR([]schema.GroupVersionKind{gvk})
@@ -65,14 +65,14 @@ func (a *applier) createOrUpdateCRD(obj *unstructured.Unstructured) string {
 	kind := obj.GetKind()
 
 	if ns == "" && namespaced {
-		ns = metav1.NamespaceDefault // 默认命名空间
+		ns = metav1.NamespaceDefault // Default namespace
 		obj.SetNamespace(ns)
 	}
 	var cr *unstructured.Unstructured
 	err := a.kubectl.CRD(gvk.Group, gvk.Version, gvk.Kind).Namespace(ns).Name(name).Get(&cr).Error
 
 	if err == nil && cr != nil && cr.GetName() != "" {
-		// 已经存在资源，那么就更新
+		// Resource already exists, update it
 		obj.SetResourceVersion(cr.GetResourceVersion())
 		err = a.kubectl.CRD(gvk.Group, gvk.Version, gvk.Kind).Name(name).Namespace(ns).Update(&obj).Error
 		if err != nil {
@@ -80,7 +80,7 @@ func (a *applier) createOrUpdateCRD(obj *unstructured.Unstructured) string {
 		}
 		return fmt.Sprintf("%s/%s updated", kind, name)
 	} else {
-		// 不存在，那么就创建
+		// Resource doesn't exist, create it
 		err = a.kubectl.CRD(gvk.Group, gvk.Version, gvk.Kind).Name(name).Namespace(ns).Create(&obj).Error
 		if err != nil {
 			return fmt.Sprintf("create %s/%s,%s %s/%s error:%v", gvk.Group, gvk.Version, gvk.Kind, ns, name, err)
@@ -89,10 +89,10 @@ func (a *applier) createOrUpdateCRD(obj *unstructured.Unstructured) string {
 	}
 }
 func (a *applier) deleteCRD(obj *unstructured.Unstructured) string {
-	// 提取 Group, Version, Kind
+	// Extract Group, Version, Kind
 	gvk := obj.GroupVersionKind()
 	if gvk.Kind == "" || gvk.Version == "" {
-		return fmt.Sprintf("YAML 缺少必要的 Group, Version 或 Kind")
+		return fmt.Sprintf("YAML missing required Group, Version or Kind")
 	}
 	ns := obj.GetNamespace()
 	name := obj.GetName()
@@ -103,7 +103,7 @@ func (a *applier) deleteCRD(obj *unstructured.Unstructured) string {
 	return fmt.Sprintf("%s/%s deleted", gvk.Kind, name)
 }
 
-// splitYAML 按 "---" 分割多文档 YAML
+// splitYAML splits multi-document YAML by "---"
 func splitYAML(yamlStr string) []string {
 	yamlStr = utils.NormalizeNewlines(yamlStr)
 	return strings.Split(yamlStr, "\n---\n")

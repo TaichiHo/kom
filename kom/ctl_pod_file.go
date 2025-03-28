@@ -12,7 +12,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// FileInfo 文件节点结构
+// FileInfo represents a file node structure
 type FileInfo struct {
 	Name        string `json:"name"`
 	Type        string `json:"type"` // file or directory
@@ -21,11 +21,11 @@ type FileInfo struct {
 	Group       string `json:"group"`
 	Size        int64  `json:"size"`
 	ModTime     string `json:"modTime"`
-	Path        string `json:"path"`  // 存储路径
-	IsDir       bool   `json:"isDir"` // 指示是否
+	Path        string `json:"path"`  // Storage path
+	IsDir       bool   `json:"isDir"` // Indicates whether it's a directory
 }
 
-// ListFiles  获取容器中指定路径的文件和目录列表
+// ListFiles gets the list of files and directories at the specified path in the container
 func (p *pod) ListFiles(path string) ([]*FileInfo, error) {
 	klog.V(6).Infof("ListFiles %s from [%s/%s:%s]\n", path, p.kubectl.Statement.Namespace, p.kubectl.Statement.Name, p.kubectl.Statement.ContainerName)
 
@@ -60,7 +60,7 @@ func (p *pod) DownloadFile(filePath string) ([]byte, error) {
 	var fileContent []byte
 	found := false
 
-	// 遍历 tar 中的每个文件
+	// Iterate through each file in the tar
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
@@ -72,8 +72,8 @@ func (p *pod) DownloadFile(filePath string) ([]byte, error) {
 
 		if header.Name == strings.TrimPrefix(filePath, "/") {
 			found = true
-			// 使用带有大小限制的读取方式
-			if header.Size > 500*1024*1024 { // 500MB 限制
+			// Use size-limited reading method
+			if header.Size > 500*1024*1024 { // 500MB limit
 				return nil, fmt.Errorf("file size %d exceeds maximum allowed size", header.Size)
 			}
 
@@ -114,11 +114,11 @@ func (p *pod) DeleteFile(filePath string) ([]byte, error) {
 	return result, nil
 }
 
-// UploadFile 将文件上传到指定容器
+// UploadFile uploads a file to the specified container
 func (p *pod) UploadFile(destPath string, file *os.File) error {
 	klog.V(6).Infof("UploadFile %s to [%s/%s:%s] \n", destPath, p.kubectl.Statement.Namespace, p.kubectl.Statement.Name, p.kubectl.Statement.ContainerName)
 
-	// 读取并压缩文件内容
+	// Read and compress file content
 	var buf bytes.Buffer
 	if err := createTar(file, &buf); err != nil {
 		panic(err.Error())
@@ -134,19 +134,19 @@ func (p *pod) UploadFile(destPath string, file *os.File) error {
 	return nil
 }
 
-// createTar 创建一个 tar 格式的压缩文件
+// createTar creates a tar format compressed file
 func createTar(file *os.File, buf *bytes.Buffer) error {
-	// 创建 tar writer
+	// Create tar writer
 	tw := tar.NewWriter(buf)
 	defer tw.Close()
 
-	// 获取文件信息
+	// Get file information
 	stat, err := file.Stat()
 	if err != nil {
 		return err
 	}
 
-	// 添加文件头信息
+	// Add file header information
 	hdr := &tar.Header{
 		Name: stat.Name(),
 		Mode: int64(stat.Mode()),
@@ -156,32 +156,32 @@ func createTar(file *os.File, buf *bytes.Buffer) error {
 		return err
 	}
 
-	// 将文件内容写入到 tar
+	// Write file content to tar
 	_, err = io.Copy(tw, file)
 	return err
 }
 
 // SaveFile
-// TODO 要写入文件的字节数据
+// TODO Byte data to be written to file
 //
-//	data := []byte("这是一些字节数据。")
+//	data := []byte("This is some byte data.")
 //
-//	// 创建或打开文件
+//	// Create or open file
 //	file, err := os.Create("output.txt")
 //	if err != nil {
-//	    fmt.Println("无法创建文件:", err)
+//	    fmt.Println("Cannot create file:", err)
 //	    return
 //	}
-//	defer file.Close() // 确保在函数结束时关闭文件
+//	defer file.Close() // Ensure file is closed when function ends
 //
-//	// 将 []byte 写入文件
+//	// Write []byte to file
 //	_, err = file.Write(data)
 //	if err != nil {
-//	    fmt.Println("写入文件失败:", err)
+//	    fmt.Println("Failed to write to file:", err)
 //	    return
 //	}
 //
-//	fmt.Println("字节数据已成功写入文件.")
+//	fmt.Println("Byte data has been successfully written to file.")
 func (p *pod) SaveFile(destPath string, context string) error {
 	klog.V(6).Infof("SaveFile %s to [%s/%s:%s]\n", destPath, p.kubectl.Statement.Namespace, p.kubectl.Statement.Name, p.kubectl.Statement.ContainerName)
 	klog.V(8).Infof("SaveFile %s \n", context)
@@ -197,43 +197,43 @@ func (p *pod) SaveFile(destPath string, context string) error {
 	return nil
 }
 
-// getFileType 根据文件权限获取文件类型
+// getFileType gets the file type based on file permissions
 //
-// l 代表符号链接（Symbolic link）
-// - 代表普通文件（Regular file）
-// d 代表目录（Directory）
-// b 代表块设备（Block device）
-// c 代表字符设备（Character device）
-// p 代表命名管道（Named pipe）
-// s 代表套接字（Socket）
+// l represents symbolic link
+// - represents regular file
+// d represents directory
+// b represents block device
+// c represents character device
+// p represents named pipe
+// s represents socket
 func getFileType(permissions string) string {
-	// 获取文件类型标志位
+	// Get file type flag
 	p := permissions[0]
 	var fileType string
 
 	switch p {
 	case 'd':
-		fileType = "directory" // 目录
+		fileType = "directory" // Directory
 	case '-':
-		fileType = "file" // 普通文件
+		fileType = "file" // Regular file
 	case 'l':
-		fileType = "link" // 符号链接
+		fileType = "link" // Symbolic link
 	case 'b':
-		fileType = "block" // 块设备
+		fileType = "block" // Block device
 	case 'c':
-		fileType = "character" // 字符设备
+		fileType = "character" // Character device
 	case 'p':
-		fileType = "pipe" // 命名管道
+		fileType = "pipe" // Named pipe
 	case 's':
-		fileType = "socket" // 套接字
+		fileType = "socket" // Socket
 	default:
-		fileType = "unknown" // 未知类型
+		fileType = "unknown" // Unknown type
 	}
 
 	return fileType
 }
 
-// parseFileList 解析输出并生成 FileInfo 列表
+// parseFileList parses output and generates FileInfo list
 func parseFileList(path, output string) []*FileInfo {
 	var nodes []*FileInfo
 	lines := strings.Split(output, "\n")
@@ -244,7 +244,7 @@ func parseFileList(path, output string) []*FileInfo {
 		parts := strings.Fields(line)
 		klog.V(6).Infof("parseFileList path %s %s\n", path, line)
 		if len(parts) < 9 {
-			continue // 不完整的行
+			continue // Incomplete line
 		}
 
 		permissions := parts[0]
@@ -254,11 +254,11 @@ func parseFileList(path, output string) []*FileInfo {
 		group := parts[3]
 		modTime := strings.Join(parts[5:8], " ")
 
-		// 判断文件类型
+		// Determine file type
 
 		fileType := getFileType(permissions)
 
-		// 封装成 FileInfo
+		// Package into FileInfo
 		node := FileInfo{
 			Path:        fmt.Sprintf("/%s", name),
 			Name:        name,

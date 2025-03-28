@@ -131,9 +131,9 @@ func (p *processor) Replace(name string, fn func(*Kubectl) error) error {
 }
 
 func (p *processor) Execute(k *Kubectl) error {
-	// // 执行前做必要检查
+	// // Perform necessary checks before execution
 	// if k.Statement.GVR.Empty() {
-	// 	k.Statement.Error = fmt.Errorf("请先调用Resource()、CRD()、GVR()等方法指明操作对象的GVR")
+	// 	k.Statement.Error = fmt.Errorf("Please call Resource(), CRD(), GVR() or similar methods first to specify the GVR of the operation target")
 	// 	return k.Statement.Error
 	// }
 

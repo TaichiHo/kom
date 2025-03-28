@@ -17,56 +17,56 @@ func SortByCreationTime(items []unstructured.Unstructured) []unstructured.Unstru
 	return items
 }
 
-// RemoveManagedFields 删除 unstructured.Unstructured 对象中的 metadata.managedFields 字段
+// RemoveManagedFields removes the metadata.managedFields field from the unstructured.Unstructured object
 func RemoveManagedFields(obj *unstructured.Unstructured) {
-	// 获取 metadata
+	// Get metadata
 	metadata, found, err := unstructured.NestedMap(obj.Object, "metadata")
 	if err != nil || !found {
 		return
 	}
 
-	// 删除 managedFields
+	// Delete managedFields
 	delete(metadata, "managedFields")
 
-	// 更新 metadata
+	// Update metadata
 	err = unstructured.SetNestedMap(obj.Object, metadata, "metadata")
 	if err != nil {
 		return
 	}
 }
 
-// ConvertUnstructuredToYAML 将 Unstructured 对象转换为 YAML 字符串
+// ConvertUnstructuredToYAML converts an Unstructured object to a YAML string
 func ConvertUnstructuredToYAML(obj *unstructured.Unstructured) (string, error) {
 
-	// Marshal Unstructured 对象为 JSON
+	// Marshal Unstructured object to JSON
 	jsonBytes, err := obj.MarshalJSON()
 	if err != nil {
-		return "", fmt.Errorf("无法序列化 Unstructured 对象为 JSON: %v", err)
+		return "", fmt.Errorf("failed to serialize Unstructured object to JSON: %v", err)
 	}
 
-	// 将 JSON 转换为 YAML
+	// Convert JSON to YAML
 	yamlBytes, err := yaml.JSONToYAML(jsonBytes)
 	if err != nil {
-		return "", fmt.Errorf("无法将 JSON 转换为 YAML: %v", err)
+		return "", fmt.Errorf("failed to convert JSON to YAML: %v", err)
 	}
 
 	return string(yamlBytes), nil
 }
 
-// AddOrUpdateAnnotations 添加或更新 annotations
+// AddOrUpdateAnnotations adds or updates annotations
 func AddOrUpdateAnnotations(item *unstructured.Unstructured, newAnnotations map[string]string) {
-	// 获取现有的 annotations
+	// Get existing annotations
 	annotations := item.GetAnnotations()
 	if annotations == nil {
-		// 如果不存在，初始化一个 map
+		// If not exists, initialize a map
 		annotations = make(map[string]string)
 	}
 
-	// 追加或覆盖新数据
+	// Append or override new data
 	for key, value := range newAnnotations {
 		annotations[key] = value
 	}
 
-	// 设置回对象
+	// Set back to the object
 	item.SetAnnotations(annotations)
 }

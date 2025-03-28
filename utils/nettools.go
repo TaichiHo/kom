@@ -11,10 +11,10 @@ func CidrTotalIPs(cidr string) (int, error) {
 		return 0, fmt.Errorf("invalid CIDR: %v", err)
 	}
 
-	// 获取 CIDR 的掩码大小
+	// Get the mask size of the CIDR
 	ones, bits := ipNet.Mask.Size()
 
-	// 计算总 IP 数量
+	// Calculate total number of IPs
 	totalIPs := 1 << (bits - ones)
 	return totalIPs, nil
 }

@@ -6,8 +6,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// CompareMapContains compares two maps and returns true if the small map is contained in the big map
-// small Map中的所有键值都存在于big map中，则返回true
+// CompareMapContains compares two maps and returns true if all key-value pairs in the small map exist in the big map
 func CompareMapContains[T string | int](small, big map[string]T) bool {
 	for key, valueA := range small {
 		valueB, exists := big[key]

@@ -59,14 +59,14 @@ func (d *daemonSet) Restore() error {
 }
 
 func (d *daemonSet) ManagedPods() ([]*corev1.Pod, error) {
-	// 先找到ds
+	// First find the DaemonSet
 	var ds v1.DaemonSet
 	err := d.kubectl.WithCache(d.kubectl.Statement.CacheTTL).Resource(&ds).Get(&ds).Error
 
 	if err != nil {
 		return nil, err
 	}
-	// 通过ds 获取pod
+	// Get pods through DaemonSet
 	var podList []*corev1.Pod
 	err = d.kubectl.newInstance().WithCache(d.kubectl.Statement.CacheTTL).Resource(&corev1.Pod{}).
 		Namespace(d.kubectl.Statement.Namespace).
@@ -82,5 +82,5 @@ func (d *daemonSet) ManagedPod() (*corev1.Pod, error) {
 	if len(podList) > 0 {
 		return podList[0], nil
 	}
-	return nil, fmt.Errorf("未发现DaemonSet[%s]下的Pod", d.kubectl.Statement.Name)
+	return nil, fmt.Errorf("No Pod found under DaemonSet[%s]", d.kubectl.Statement.Name)
 }

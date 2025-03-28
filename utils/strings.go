@@ -48,15 +48,15 @@ func ToUInt(s string) uint {
 	return uint(id)
 }
 
-// ToIntSlice 将逗号分隔的数字字符串转换为 []int 切片
+// ToIntSlice converts a comma-separated string of numbers into a []int slice
 func ToIntSlice(ids string) []int {
-	// 分割字符串
+	// Split the string
 	strIds := strings.Split(ids, ",")
 	var intIds []int
 
-	// 遍历字符串数组并转换为整数
+	// Iterate through the string array and convert to integers
 	for _, strId := range strIds {
-		strId = strings.TrimSpace(strId) // 移除前后空格
+		strId = strings.TrimSpace(strId) // Remove leading and trailing spaces
 		if id, err := strconv.Atoi(strId); err == nil {
 			intIds = append(intIds, id)
 		}
@@ -65,13 +65,13 @@ func ToIntSlice(ids string) []int {
 	return intIds
 }
 func ToInt64Slice(ids string) []int64 {
-	// 分割字符串
+	// Split the string
 	strIds := strings.Split(ids, ",")
 	var intIds []int64
 
-	// 遍历字符串数组并转换为整数
+	// Iterate through the string array and convert to integers
 	for _, strId := range strIds {
-		strId = strings.TrimSpace(strId) // 移除前后空格
+		strId = strings.TrimSpace(strId) // Remove leading and trailing spaces
 		if id, err := strconv.ParseInt(strId, 10, 64); err == nil {
 			intIds = append(intIds, id)
 		}
@@ -92,12 +92,12 @@ func IsTextFile(ob []byte) (bool, error) {
 	if n > 1024 {
 		n = 1024
 	}
-	// 检查是否包含非文本字符
+	// Check for non-text characters
 	if !utf8.Valid(ob[:n]) {
 		return false, nil
 	}
 
-	// 检查是否包含空字节（\x00），空字节通常代表二进制文件
+	// Check for null bytes (\x00), which typically indicate a binary file
 	if bytes.Contains(ob[:n], []byte{0}) {
 		return false, nil
 	}
@@ -105,22 +105,22 @@ func IsTextFile(ob []byte) (bool, error) {
 	return true, nil
 }
 
-// SanitizeFileName 去除文件名中的非法字符，并替换为下划线 '_'
+// SanitizeFileName removes illegal characters from filenames and replaces them with underscores '_'
 func SanitizeFileName(filename string) string {
-	// 定义非法字符的正则表达式，包括 \ / : * ? " < > | 以及小括号 ()
+	// Define regex for illegal characters, including \ / : * ? " < > | and parentheses ()
 	reg := regexp.MustCompile(`[\\/:*?"<>|()]+`)
 
-	// 替换非法字符为下划线 '_'
+	// Replace illegal characters with underscore '_'
 	sanitizedFilename := reg.ReplaceAllString(filename, "_")
 
 	return sanitizedFilename
 }
 func NormalizeNewlines(input string) string {
-	// 将 Windows 风格的换行符 \r\n 替换为 Unix 风格 \n
+	// Replace Windows-style newlines \r\n with Unix-style \n
 	return strings.ReplaceAll(input, "\r\n", "\n")
 }
 func NormalizeToWindows(input string) string {
-	// 先统一为 \n 再替换为 \r\n，防止重复替换出错
+	// First normalize to \n then replace with \r\n to prevent duplicate replacements
 	unixNormalized := strings.ReplaceAll(input, "\r\n", "\n")
 	return strings.ReplaceAll(unixNormalized, "\n", "\r\n")
 }
@@ -133,12 +133,12 @@ func TrimQuotes(str string) string {
 }
 
 func ParseTime(value string) (time.Time, error) {
-	// 尝试不同的时间格式
+	// Try different time formats
 	layouts := []string{
 		time.RFC3339,                    // "2006-01-02T15:04:05Z07:00"
-		"2006-01-02",                    // "2006-01-02"  (日期)
-		"2006-01-02 15:04:05",           // "2006-01-02 15:04:05" (无时区)
-		"2006-01-02 15:04:05 -0700 MST", // "2006-01-02 15:04:05 -0700 MST" (带时区) 2024-12-05 14:11:44 +0000 UTC
+		"2006-01-02",                    // "2006-01-02" (date)
+		"2006-01-02 15:04:05",           // "2006-01-02 15:04:05" (no timezone)
+		"2006-01-02 15:04:05 -0700 MST", // "2006-01-02 15:04:05 -0700 MST" (with timezone) 2024-12-05 14:11:44 +0000 UTC
 	}
 
 	var t time.Time
@@ -152,8 +152,8 @@ func ParseTime(value string) (time.Time, error) {
 	return t, err
 }
 
-// StringListToSQLIn 将字符串列表转换为 SQL IN 子句中使用的格式，例如 ('x', 'xx')
-// 例如 ['x', 'xx'] 转换为 ('x', 'xx')
+// StringListToSQLIn converts a string list to a format used in SQL IN clause, e.g., ('x', 'xx')
+// For example, ['x', 'xx'] is converted to ('x', 'xx')
 func StringListToSQLIn(strList []string) string {
 	if len(strList) == 0 {
 		return "()"

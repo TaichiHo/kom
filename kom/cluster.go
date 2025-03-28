@@ -1,6 +1,7 @@
 package kom
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -21,47 +22,47 @@ import (
 
 var clusterInstances *ClusterInstances
 
-// ClusterInstances 集群实例管理器
+// ClusterInstances manages multiple cluster instances
 type ClusterInstances struct {
 	clusters             map[string]*ClusterInst
-	callbackRegisterFunc func(cluster *ClusterInst) func() // 用来注册回调参数的回调方法
+	callbackRegisterFunc func(cluster *ClusterInst) func() // Callback function for registering parameters
 }
 
-// ClusterInst 单一集群实例
+// ClusterInst represents a single cluster instance
 type ClusterInst struct {
-	ID            string                       // 集群ID
+	ID            string                       // Cluster ID
 	Kubectl       *Kubectl                     // kom
-	Client        *kubernetes.Clientset        // kubernetes 客户端
-	Config        *rest.Config                 // rest config
-	DynamicClient *dynamic.DynamicClient       // 动态客户端
-	apiResources  []*metav1.APIResource        // 当前k8s已注册资源
-	crdList       []*unstructured.Unstructured // 当前k8s已注册资源 //TODO 定时更新或者Watch更新
-	callbacks     *callbacks                   // 回调
-	docs          *doc.Docs                    // 文档
-	serverVersion *version.Info                // 服务器版本
+	Client        *kubernetes.Clientset        // Kubernetes client
+	Config        *rest.Config                 // REST config
+	DynamicClient *dynamic.DynamicClient       // Dynamic client
+	apiResources  []*metav1.APIResource        // Currently registered k8s resources
+	crdList       []*unstructured.Unstructured // Currently registered k8s CRDs //TODO Update periodically or via Watch
+	callbacks     *callbacks                   // Callbacks
+	docs          *doc.Docs                    // Documentation
+	serverVersion *version.Info                // Server version
 	describerMap  map[schema.GroupKind]describe.ResourceDescriber
 	Cache         *ristretto.Cache[string, any]
-	openAPISchema *openapi_v2.Document // openapi
+	openAPISchema *openapi_v2.Document // OpenAPI schema
 }
 
-// Clusters 集群实例管理器
+// Clusters returns the cluster instances manager
 func Clusters() *ClusterInstances {
 	return clusterInstances
 }
 
-// 初始化
+// Initialize
 func init() {
 	clusterInstances = &ClusterInstances{
 		clusters: make(map[string]*ClusterInst),
 	}
 }
 
-// DefaultCluster 获取默认集群，简化调用方式
+// DefaultCluster gets the default cluster, simplifying the calling method
 func DefaultCluster() *Kubectl {
 	return Clusters().DefaultCluster().Kubectl
 }
 
-// Cluster 获取集群
+// Cluster gets a cluster by ID
 func Cluster(id string) *Kubectl {
 	var cluster *ClusterInst
 	if id == "" {
@@ -75,7 +76,7 @@ func Cluster(id string) *Kubectl {
 	return cluster.Kubectl
 }
 
-// RegisterInCluster 注册InCluster集群
+// RegisterInCluster registers an InCluster configuration
 func (c *ClusterInstances) RegisterInCluster() (*Kubectl, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -84,12 +85,12 @@ func (c *ClusterInstances) RegisterInCluster() (*Kubectl, error) {
 	return c.RegisterByConfigWithID(config, "InCluster")
 }
 
-// SetRegisterCallbackFunc 设置回调注册函数
+// SetRegisterCallbackFunc sets the callback registration function
 func (c *ClusterInstances) SetRegisterCallbackFunc(callback func(cluster *ClusterInst) func()) {
 	c.callbackRegisterFunc = callback
 }
 
-// RegisterByPath 通过kubeconfig文件路径注册集群
+// RegisterByPath registers a cluster using a kubeconfig file path
 func (c *ClusterInstances) RegisterByPath(path string) (*Kubectl, error) {
 	config, err := clientcmd.BuildConfigFromFlags("", path)
 	if err != nil {
@@ -98,7 +99,7 @@ func (c *ClusterInstances) RegisterByPath(path string) (*Kubectl, error) {
 	return c.RegisterByConfig(config)
 }
 
-// RegisterByString 通过kubeconfig文件的string 内容进行注册
+// RegisterByString registers a cluster using the string content of a kubeconfig file
 func (c *ClusterInstances) RegisterByString(str string) (*Kubectl, error) {
 	config, err := clientcmd.Load([]byte(str))
 	if err != nil {
@@ -113,7 +114,7 @@ func (c *ClusterInstances) RegisterByString(str string) (*Kubectl, error) {
 	return c.RegisterByConfig(restConfig)
 }
 
-// RegisterByStringWithID 通过kubeconfig文件的string 内容进行注册
+// RegisterByStringWithID registers a cluster using the string content of a kubeconfig file with a specific ID
 func (c *ClusterInstances) RegisterByStringWithID(str string, id string) (*Kubectl, error) {
 	config, err := clientcmd.Load([]byte(str))
 	if err != nil {
@@ -128,7 +129,7 @@ func (c *ClusterInstances) RegisterByStringWithID(str string, id string) (*Kubec
 	return c.RegisterByConfigWithID(restConfig, id)
 }
 
-// RegisterByPathWithID 通过kubeconfig文件路径注册集群
+// RegisterByPathWithID registers a cluster using a kubeconfig file path with a specific ID
 func (c *ClusterInstances) RegisterByPathWithID(path string, id string) (*Kubectl, error) {
 	config, err := clientcmd.BuildConfigFromFlags("", path)
 	if err != nil {
@@ -137,7 +138,7 @@ func (c *ClusterInstances) RegisterByPathWithID(path string, id string) (*Kubect
 	return c.RegisterByConfigWithID(config, id)
 }
 
-// RegisterByConfig 注册集群
+// RegisterByConfig registers a cluster using a REST config
 func (c *ClusterInstances) RegisterByConfig(config *rest.Config) (*Kubectl, error) {
 	if config == nil {
 		return nil, fmt.Errorf("config is nil")
@@ -147,7 +148,7 @@ func (c *ClusterInstances) RegisterByConfig(config *rest.Config) (*Kubectl, erro
 	return c.RegisterByConfigWithID(config, host)
 }
 
-// RegisterByConfigWithID 注册集群
+// RegisterByConfigWithID registers a cluster using a REST config with a specific ID
 func (c *ClusterInstances) RegisterByConfigWithID(config *rest.Config, id string) (*Kubectl, error) {
 	if config == nil {
 		return nil, fmt.Errorf("config is nil")
@@ -158,7 +159,7 @@ func (c *ClusterInstances) RegisterByConfigWithID(config *rest.Config, id string
 	if exists {
 		return cluster.Kubectl, nil
 	} else {
-		// key 不存在，进行初始化
+		// Initialize when key doesn't exist
 		k := initKubectl(config, id)
 		cluster = &ClusterInst{
 			ID:      id,
@@ -175,31 +176,31 @@ func (c *ClusterInstances) RegisterByConfigWithID(config *rest.Config, id string
 		if err != nil {
 			return nil, fmt.Errorf("RegisterByConfigWithID Error %s %v", id, err)
 		}
-		cluster.Client = client               // kubernetes 客户端
-		cluster.DynamicClient = dynamicClient // 动态客户端
-		// 缓存
-		cluster.apiResources = k.initializeAPIResources()       // API 资源
-		cluster.crdList = k.initializeCRDList(time.Minute * 10) // CRD列表,10分钟缓存
-		cluster.callbacks = k.initializeCallbacks()             // 回调
-		cluster.serverVersion = k.initializeServerVersion()     // 服务器版本
+		cluster.Client = client               // Kubernetes client
+		cluster.DynamicClient = dynamicClient // Dynamic client
+		// Cache
+		cluster.apiResources = k.initializeAPIResources()       // API resources
+		cluster.crdList = k.initializeCRDList(time.Minute * 10) // CRD list with 10-minute cache
+		cluster.callbacks = k.initializeCallbacks()             // Callbacks
+		cluster.serverVersion = k.initializeServerVersion()     // Server version
 		cluster.openAPISchema = k.getOpenAPISchema()
-		cluster.docs = doc.InitTrees(k.getOpenAPISchema()) // 文档
-		cluster.describerMap = k.initializeDescriberMap()  // 初始化描述器
-		if c.callbackRegisterFunc != nil {                 // 注册回调方法
+		cluster.docs = doc.InitTrees(k.getOpenAPISchema()) // Documentation
+		cluster.describerMap = k.initializeDescriberMap()  // Initialize describers
+		if c.callbackRegisterFunc != nil {                 // Register callback method
 			c.callbackRegisterFunc(cluster)
 		}
 
 		cache, err := ristretto.NewCache(&ristretto.Config[string, any]{
-			NumCounters: 1e7,     // number of keys to track frequency of (10M).
-			MaxCost:     1 << 30, // maximum cost of cache (1GB).
-			BufferItems: 64,      // number of keys per Get buffer.
+			NumCounters: 1e7,     // number of keys to track frequency of (10M)
+			MaxCost:     1 << 30, // maximum cost of cache (1GB)
+			BufferItems: 64,      // number of keys per Get buffer
 		})
 		cluster.Cache = cache
 		return k, nil
 	}
 }
 
-// GetClusterById 根据集群ID获取集群实例
+// GetClusterById gets a cluster instance by ID
 func (c *ClusterInstances) GetClusterById(id string) *ClusterInst {
 	cluster, exists := c.clusters[id]
 	if !exists {
@@ -208,51 +209,140 @@ func (c *ClusterInstances) GetClusterById(id string) *ClusterInst {
 	return cluster
 }
 
-// RemoveClusterById 删除集群
+// RemoveClusterById removes a cluster by ID
 func (c *ClusterInstances) RemoveClusterById(id string) {
 	delete(c.clusters, id)
 }
 
-// AllClusters 返回所有集群实例
+// AllClusters returns all cluster instances
 func (c *ClusterInstances) AllClusters() map[string]*ClusterInst {
 	return c.clusters
 }
 
-// DefaultCluster 返回一个默认的 ClusterInst 实例。
-// 当 clusters 列表为空时，返回 nil。
-// 首先尝试返回 ID 为 "InCluster" 的实例，如果不存在，
-// 则尝试返回 ID 为 "default" 的实例。
-// 如果上述两个实例都不存在，则返回 clusters 列表中的任意一个实例。
+// DefaultCluster returns a default ClusterInst instance.
+// Returns nil when the clusters list is empty.
+// First tries to return the instance with ID "InCluster",
+// then tries to return the instance with ID "default".
+// If neither exists, returns any instance from the clusters list.
 func (c *ClusterInstances) DefaultCluster() *ClusterInst {
-	// 检查 clusters 列表是否为空
+	// Check if clusters list is empty
 	if len(c.clusters) == 0 {
 		return nil
 	}
 
-	// 尝试获取 ID 为 "InCluster" 的集群实例
+	// Try to get cluster instance with ID "InCluster"
 	id := "InCluster"
 	cluster, exists := c.clusters[id]
 	if exists {
 		return cluster
 	}
 
-	// 尝试获取 ID 为 "default" 的集群实例
+	// Try to get cluster instance with ID "default"
 	id = "default"
 	cluster, exists = c.clusters[id]
 	if exists {
 		return cluster
 	}
 
-	// 如果上述两个实例都不存在，遍历 clusters 列表，返回任意一个实例
+	// If neither instance exists, return any instance from the clusters list
 	for _, v := range c.clusters {
 		return v
 	}
 
-	// 如果 clusters 列表为空（理论上此时应已返回），则返回 nil
+	// Return nil if clusters list is empty (theoretically should have returned by now)
 	return nil
 }
 
-// Show 显示所有集群信息
+// RegisterClusterAPIConfigs discovers and registers Cluster API managed clusters
+func (c *ClusterInstances) RegisterClusterAPIConfigs() error {
+	// Get the default cluster's dynamic client to discover CAPI clusters
+	defaultCluster := c.DefaultCluster()
+	if defaultCluster == nil {
+		return fmt.Errorf("no default cluster available to discover CAPI clusters")
+	}
+
+	// Define supported CAPI versions
+	capiVersions := []schema.GroupVersionResource{
+		{
+			Group:    "cluster.x-k8s.io",
+			Version:  "v1beta1",
+			Resource: "clusters",
+		},
+		{
+			Group:    "cluster.x-k8s.io",
+			Version:  "v1alpha3",
+			Resource: "clusters",
+		},
+	}
+
+	// Track if we found any clusters across all versions
+	foundClusters := false
+
+	// Iterate through each CAPI version
+	for _, capiGVR := range capiVersions {
+		// List all namespaces with CAPI clusters for this version
+		clusters, err := defaultCluster.DynamicClient.Resource(capiGVR).List(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			klog.V(4).Infof("CAPI version %s not available: %v", capiGVR.Version, err)
+			continue // Try next version if this one isn't available
+		}
+
+		// If we found at least one cluster in any version
+		if len(clusters.Items) > 0 {
+			foundClusters = true
+		}
+
+		for _, cluster := range clusters.Items {
+			clusterName := cluster.GetName()
+			namespace := cluster.GetNamespace()
+
+			// Generate a unique cluster ID including the version
+			clusterID := fmt.Sprintf("capi-%s-%s-%s", capiGVR.Version, namespace, clusterName)
+
+			// Check if cluster is already registered
+			if c.GetClusterById(clusterID) != nil {
+				klog.V(4).Infof("Cluster %s in namespace %s (version %s) already registered", clusterName, namespace, capiGVR.Version)
+				continue
+			}
+
+			// Try to get the kubeconfig secret
+			secret, err := defaultCluster.Client.CoreV1().Secrets(namespace).Get(
+				context.Background(),
+				fmt.Sprintf("%s-kubeconfig", clusterName),
+				metav1.GetOptions{},
+			)
+			if err != nil {
+				klog.Errorf("Failed to get kubeconfig secret for cluster %s in namespace %s: %v", clusterName, namespace, err)
+				continue
+			}
+
+			// Get kubeconfig data from secret
+			kubeconfigData, ok := secret.Data["value"]
+			if !ok {
+				klog.Errorf("Kubeconfig secret for cluster %s in namespace %s has no 'value' key", clusterName, namespace)
+				continue
+			}
+
+			// Register the cluster
+			_, err = c.RegisterByStringWithID(string(kubeconfigData), clusterID)
+			if err != nil {
+				klog.Errorf("Failed to register cluster %s in namespace %s: %v", clusterName, namespace, err)
+				continue
+			}
+
+			klog.Infof("Successfully registered CAPI cluster %s from namespace %s with ID %s (version %s)",
+				clusterName, namespace, clusterID, capiGVR.Version)
+		}
+	}
+
+	if !foundClusters {
+		klog.V(4).Info("No Cluster API clusters found in any supported version")
+	}
+
+	return nil
+}
+
+// Show displays information about all clusters
 func (c *ClusterInstances) Show() {
 	klog.Infof("Show Clusters\n")
 	for k, v := range c.clusters {

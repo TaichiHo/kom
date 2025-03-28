@@ -6,19 +6,19 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-// FormatResource 格式化 resource.Quantity 为人类可读的格式
+// FormatResource formats resource.Quantity into human-readable format
 // Example:
-// 示例：内存格式化
+// Memory formatting example:
 // q1 := resource.MustParse("8127096Ki")
 // fmt.Println("Formatted memory:", utils.FormatResource(q1))
 //
-// // 示例：内存格式化（大于 Gi）
+// // Memory formatting example (greater than Gi)
 // q2 := resource.MustParse("256Gi")
 // fmt.Println("Formatted memory:", utils.FormatResource(q2))
 //
-// // 示例：CPU 格式化
-// q3 := resource.MustParse("500m") // CPU 百分之一核
-// fmt.Println("Formatted CPU:", q3.String()) // CPU 不需要转换，直接原格式即可
+// // CPU formatting example
+// q3 := resource.MustParse("500m") // CPU 0.01 core
+// fmt.Println("Formatted CPU:", q3.String()) // For CPU, use original format directly
 func FormatResource(q resource.Quantity) string {
 	value := q.Value()
 	format := q.Format
@@ -29,11 +29,11 @@ func FormatResource(q resource.Quantity) string {
 	case resource.DecimalSI: // K, M, G, etc.
 		return formatDecimalSI(value)
 	default:
-		return q.String() // 返回原始格式
+		return q.String() // Return original format
 	}
 }
 
-// formatBinarySI 将二进制格式转换为易读格式 (Ki, Mi, Gi)
+// formatBinarySI converts binary format to readable format (Ki, Mi, Gi)
 func formatBinarySI(value int64) string {
 	const (
 		Ki = 1024
@@ -55,7 +55,7 @@ func formatBinarySI(value int64) string {
 	}
 }
 
-// formatDecimalSI 将十进制格式转换为易读格式 (K, M, G)
+// formatDecimalSI converts decimal format to readable format (K, M, G)
 func formatDecimalSI(value int64) string {
 	const (
 		K = 1000

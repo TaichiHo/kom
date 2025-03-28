@@ -20,7 +20,7 @@ func (s *scale) Scale(replicas int32) error {
 	klog.V(8).Infof("scale Resource=%s", s.kubectl.Statement.GVR.Resource)
 	klog.V(8).Infof("scale %s/%s", s.kubectl.Statement.Namespace, s.kubectl.Statement.Name)
 
-	// 当前支持restart方法的资源有
+	// Currently supported resources for restart method:
 	// Deployment
 	// StatefulSet
 	// ReplicaSet
@@ -41,8 +41,8 @@ func (s *scale) Scale(replicas int32) error {
 	return s.kubectl.Error
 }
 
-// Stop 停止deployment
-// 停止前将当前副本数记录到deployment的annotation中
+// Stop stops the deployment
+// Before stopping, records the current number of replicas in the deployment's annotation
 // kom.restore.replicas
 func (s *scale) Stop() error {
 	kind := s.kubectl.Statement.GVK.Kind
@@ -65,7 +65,7 @@ func (s *scale) Stop() error {
 	}
 
 	if replicas == 0 {
-		// 已经stop了
+		// Already stopped
 		return nil
 	}
 	patchData := fmt.Sprintf(`{
@@ -87,10 +87,10 @@ func (s *scale) Stop() error {
 
 }
 
-// Restore 停止deployment
-// 如果发现deployment的annotation中存在 kom.restore.replicas
-// 则将kom.restore.replicas的值设置为deployment的replicas
-// 没有则设置为1
+// Restore restores the deployment
+// If kom.restore.replicas annotation exists in the deployment
+// Sets the value of kom.restore.replicas as the deployment's replicas
+// If not found, sets it to 1
 func (s *scale) Restore() error {
 	kind := s.kubectl.Statement.GVK.Kind
 	if !isSupportedKind(kind, []string{"Deployment", "StatefulSet", "ReplicationController", "ReplicaSet"}) {

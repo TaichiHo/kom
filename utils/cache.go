@@ -10,23 +10,23 @@ import (
 func GetOrSetCache[T any](cache *ristretto.Cache[string, any], cacheKey string, ttl time.Duration, queryFunc func() (T, error)) (T, error) {
 	var zero T
 
-	// 如果未设置 TTL 参数，说明不需要缓存，则直接执行查询方法
+	// If TTL parameter is not set, no caching is needed, execute query method directly
 	if ttl <= 0 {
 		return queryFunc()
 	}
-	// 检查缓存是否命中
+	// Check if cache hit
 	if v, found := cache.Get(cacheKey); found {
 		klog.V(5).Infof("cache hit cacheKey= %s", cacheKey)
 		return v.(T), nil
 	}
 
-	// 缓存未命中，执行查询方法
+	// Cache miss, execute query method
 	result, err := queryFunc()
 	if err != nil {
 		return zero, err
 	}
 
-	// 设置缓存并返回结果
+	// Set cache and return result
 	cache.SetWithTTL(cacheKey, result, 100, ttl)
 	cache.Wait()
 

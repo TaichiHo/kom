@@ -11,15 +11,15 @@ import (
 func ListClusters() mcp.Tool {
 	return mcp.NewTool(
 		"list_clusters",
-		mcp.WithDescription("List all registered Kubernetes clusters / 列出所有已注册的Kubernetes集群"),
+		mcp.WithDescription("List all registered Kubernetes clusters"),
 	)
 }
 
 func ListClustersHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	// 获取所有已注册的集群名称
+	// Get all registered cluster names
 	clusters := kom.Clusters().AllClusters()
 
-	// 提取集群名称
+	// Extract cluster names
 	var result []map[string]string
 	for clusterName, _ := range clusters {
 		result = append(result, map[string]string{

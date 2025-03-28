@@ -31,35 +31,35 @@ func List(k *kom.Kubectl) error {
 		listOptions = opts[0]
 	}
 
-	// 使用反射获取 dest 的值
+	// Use reflection to get the value of dest
 	destValue := reflect.ValueOf(stmt.Dest)
 
-	// 确保 dest 是一个指向切片的指针
+	// Ensure dest is a pointer to a slice
 	if destValue.Kind() != reflect.Ptr || destValue.Elem().Kind() != reflect.Slice {
-		// 处理错误：dest 不是指向切片的指针
-		return fmt.Errorf("请传入数组类型")
+		// Handle error: dest is not a pointer to a slice
+		return fmt.Errorf("Please pass in an array type")
 	}
-	// 获取切片的元素类型
+	// Get the element type of the slice
 	elemType := destValue.Elem().Type().Elem()
 
 	cacheKey := fmt.Sprintf("%s/%s/%s/%s", ns, gvr.Group, gvr.Resource, gvr.Version)
 	list, err := utils.GetOrSetCache(stmt.ClusterCache(), cacheKey, stmt.CacheTTL, func() (list *unstructured.UnstructuredList, err error) {
-		// TODO 获取列表改为使用Option,解决大数据量获取问题。
+		// TODO Change list retrieval to use Option to solve large data volume retrieval issues
 		if namespaced {
 			if stmt.AllNamespace || len(namespaceList) > 1 {
-				// 全部命名空间 或者  传入多个命名空间
-				// client-go 不支持跨命名空间查询，就全部查出来，后面再过滤
+				// All namespaces or multiple namespaces provided
+				// client-go doesn't support cross-namespace queries, so get all and filter later
 				ns = metav1.NamespaceAll
 				list, err = stmt.Kubectl.DynamicClient().Resource(gvr).Namespace(ns).List(ctx, listOptions)
 			} else {
-				// 不是全部，也没有传多个命名空间
+				// Not all namespaces and no multiple namespaces provided
 				if ns == "" {
 					ns = metav1.NamespaceDefault
 				}
 				list, err = stmt.Kubectl.DynamicClient().Resource(gvr).Namespace(ns).List(ctx, listOptions)
 			}
 		} else {
-			// 集群级查询，不需要namespace
+			// Cluster-level query, no namespace needed
 			list, err = stmt.Kubectl.DynamicClient().Resource(gvr).List(ctx, listOptions)
 		}
 		return
@@ -68,33 +68,33 @@ func List(k *kom.Kubectl) error {
 		return err
 	}
 	if list == nil {
-		// 为空直接返回
+		// Return directly if empty
 		return fmt.Errorf("list is nil")
 	}
 	if list.Items == nil {
-		// 为空直接返回
+		// Return directly if empty
 		return fmt.Errorf("list Items is nil")
 	}
 
-	// 对结果进行过滤，执行where 条件
+	// Filter results, execute where conditions
 	result := executeFilter(list.Items, conditions)
 	if stmt.TotalCount != nil {
 		*stmt.TotalCount = int64(len(result))
 	}
 
 	if stmt.Filter.Order != "" {
-		// 对结果执行OrderBy
+		// Execute OrderBy on results
 		klog.V(6).Infof("order by = %s", stmt.Filter.Order)
 		executeOrderBy(result, stmt.Filter.Order)
 	} else {
-		// 默认按创建时间倒序
+		// Default sort by creation time in descending order
 		utils.SortByCreationTime(result)
 	}
 
-	// 先清空之前的值
+	// Clear previous values first
 	destValue.Elem().Set(reflect.MakeSlice(destValue.Elem().Type(), 0, 0))
 	streamTmp := stream.FromSlice(result)
-	// 查看是否有filter ，先使用filter 形成一个最终的list.Items
+	// Check if there's a filter, use filter first to form a final list.Items
 	if stmt.Filter.Offset > 0 {
 		streamTmp = streamTmp.Skip(stmt.Filter.Offset)
 	}
@@ -108,11 +108,11 @@ func List(k *kom.Kubectl) error {
 		if stmt.RemoveManagedFields {
 			utils.RemoveManagedFields(obj)
 		}
-		// 创建新的指向元素类型的指针
+		// Create new pointer to element type
 		newElemPtr := reflect.New(elemType)
-		// unstructured 转换为原始目标类型
+		// Convert unstructured to original target type
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, newElemPtr.Interface())
-		// 将指针的值添加到切片中
+		// Add pointer value to slice
 		destValue.Elem().Set(reflect.Append(destValue.Elem(), newElemPtr.Elem()))
 
 	}
@@ -126,14 +126,14 @@ func List(k *kom.Kubectl) error {
 
 func executeOrderBy(result []unstructured.Unstructured, order string) {
 	// order by `metadata.name` asc, `metadata.host` asc
-	// todo 目前只实现了单一字段的排序，还没有搞定多个字段的排序
+	// TODO Currently only implemented single field sorting, haven't figured out multi-field sorting yet
 	order = strings.TrimPrefix(strings.TrimSpace(order), "order by")
 	order = strings.TrimSpace(order)
 	orders := strings.Split(order, ",")
 	for _, ord := range orders {
 		var field string
 		var desc bool
-		// 判断排序方向
+		// Determine sort direction
 		if strings.Contains(ord, "desc") {
 			desc = true
 			field = strings.ReplaceAll(ord, "desc", "")
@@ -145,7 +145,7 @@ func executeOrderBy(result []unstructured.Unstructured, order string) {
 		klog.V(6).Infof("Sorting by field: %s, Desc: %v", field, desc)
 
 		slice.SortBy(result, func(a, b unstructured.Unstructured) bool {
-			// 获取字段值
+			// Get field values
 			aFieldValues, found, err := getNestedFieldAsString(a.Object, field)
 			if err != nil || !found {
 				return false
@@ -155,7 +155,7 @@ func executeOrderBy(result []unstructured.Unstructured, order string) {
 				return false
 			}
 
-			// order by 必须把数组变为单一的值
+			// order by must convert array to single value
 			if len(aFieldValues) > 1 || len(bFieldValues) > 1 {
 				return false
 			}
@@ -196,7 +196,5 @@ func executeOrderBy(result []unstructured.Unstructured, order string) {
 				return false
 			}
 		})
-
 	}
-
 }

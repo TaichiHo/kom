@@ -16,50 +16,52 @@ import (
 )
 
 type Statement struct {
-	*Kubectl            `json:"Kubectl,omitempty"`  // 基础配置
-	RowsAffected        int64                       `json:"rowsAffected,omitempty"`        // 返回受影响的行数
-	TotalCount          *int64                      `json:"totalCount,omitempty"`          // 返回查询总数，分页使用。只在List查询列表方法中生效。
-	AllNamespace        bool                        `json:"allNamespace,omitempty"`        // 所有名空间
-	Namespace           string                      `json:"namespace,omitempty"`           // 资源所属命名空间
-	NamespaceList       []string                    `json:"namespace_list,omitempty"`      // 多个命名空间，查询列表专用，只有查询列表时会出现跨命名空间查询的情况。在使用时，如果是所有命名空间，就不用NamespaceList
-	Name                string                      `json:"name,omitempty"`                // 资源名称
-	GVR                 schema.GroupVersionResource `json:"GVR"`                           // 资源类型
-	GVK                 schema.GroupVersionKind     `json:"GVK"`                           // 资源类型
-	Namespaced          bool                        `json:"namespaced,omitempty"`          // 是否是命名空间资源
-	ListOptions         []metav1.ListOptions        `json:"listOptions,omitempty"`         // 列表查询参数,作为可变参数使用，默认只取第一个，也只使用一个
-	Context             context.Context             `json:"-"`                             // 上下文
-	Dest                interface{}                 `json:"dest,omitempty"`                // 返回结果存放对象，一般为结构体指针
-	PatchType           types.PatchType             `json:"patchType,omitempty"`           // PATCH类型
-	PatchData           string                      `json:"patchData,omitempty"`           // PATCH数据
-	RemoveManagedFields bool                        `json:"removeManagedFields,omitempty"` // 是否移除管理字段
-	useCustomGVK        bool                        `json:"-"`                             // 如果通过CRD方法设置了GVK，那么就强制使用，不再进行GVK的自动解析
-	ContainerName       string                      `json:"containerName,omitempty"`       // 容器名称，执行获取容器内日志等操作使用
-	Command             string                      `json:"command,omitempty"`             // 容器内执行命令,包括ls、cat以及用户输入的命令
-	Args                []string                    `json:"args,omitempty"`                // 容器内执行命令参数
-	PodLogOptions       *v1.PodLogOptions           `json:"-" `                            // 获取容器日志使用
-	Stdin               io.Reader                   `json:"-" `                            // 设置输入
+	*Kubectl            `json:"Kubectl,omitempty"`  // Base configuration
+	RowsAffected        int64                       `json:"rowsAffected,omitempty"`        // Number of affected rows
+	TotalCount          *int64                      `json:"totalCount,omitempty"`          // Total count for queries, used for pagination. Only effective in List query methods.
+	AllNamespace        bool                        `json:"allNamespace,omitempty"`        // All namespaces
+	Namespace           string                      `json:"namespace,omitempty"`           // Resource namespace
+	NamespaceList       []string                    `json:"namespace_list,omitempty"`      // Multiple namespaces, used for list queries only. Cross-namespace queries only occur during list operations. When using AllNamespace, NamespaceList is not needed
+	Name                string                      `json:"name,omitempty"`                // Resource name
+	GVR                 schema.GroupVersionResource `json:"GVR"`                           // Resource type (GroupVersionResource)
+	GVK                 schema.GroupVersionKind     `json:"GVK"`                           // Resource type (GroupVersionKind)
+	Namespaced          bool                        `json:"namespaced,omitempty"`          // Whether it's a namespaced resource
+	ListOptions         []metav1.ListOptions        `json:"listOptions,omitempty"`         // List query parameters, used as variadic args. By default, only the first one is used
+	Context             context.Context             `json:"-"`                             // Context
+	Dest                interface{}                 `json:"dest,omitempty"`                // Destination object for results, typically a struct pointer
+	PatchType           types.PatchType             `json:"patchType,omitempty"`           // PATCH type
+	PatchData           string                      `json:"patchData,omitempty"`           // PATCH data
+	RemoveManagedFields bool                        `json:"removeManagedFields,omitempty"` // Whether to remove managed fields
+	useCustomGVK        bool                        `json:"-"`                             // If GVK is set via CRD method, force its use and skip automatic GVK resolution
+	ContainerName       string                      `json:"containerName,omitempty"`       // Container name, used for container log operations
+	Command             string                      `json:"command,omitempty"`             // Container commands, including ls, cat, and user input commands
+	Args                []string                    `json:"args,omitempty"`                // Container command arguments
+	PodLogOptions       *v1.PodLogOptions           `json:"-" `                            // Used for getting container logs
+	Stdin               io.Reader                   `json:"-" `                            // Set input
 	Filter              Filter                      `json:"filter,omitempty"`
 	StdoutCallback      func(data []byte) error     `json:"-"`
 	StderrCallback      func(data []byte) error     `json:"-"`
-	CacheTTL            time.Duration               `json:"cacheTTL,omitempty"`    // 设置缓存时间
-	ForceDelete         bool                        `json:"forceDelete,omitempty"` // 强制删除标志
+	CacheTTL            time.Duration               `json:"cacheTTL,omitempty"`    // Cache duration
+	ForceDelete         bool                        `json:"forceDelete,omitempty"` // Force delete flag
 }
+
 type Filter struct {
 	Columns    []string    `json:"columns,omitempty"`
 	Conditions []Condition `json:"condition,omitempty"` // xx=?
 	Order      string      `json:"order,omitempty"`
 	Limit      int         `json:"limit,omitempty"`
 	Offset     int         `json:"offset,omitempty"`
-	Sql        string      `json:"sql,omitempty"`    // 原始sql
-	Parsed     bool        `json:"parsed,omitempty"` // 是否解析过
+	Sql        string      `json:"sql,omitempty"`    // Original SQL
+	Parsed     bool        `json:"parsed,omitempty"` // Whether it has been parsed
 	From       string      `json:"from,omitempty"`   // From TableName
 }
+
 type Condition struct {
 	Depth     int
 	AndOr     string
 	Field     string
 	Operator  string
-	Value     interface{} // 通过detectType 赋值为精确类型值，detectType之前都是string
+	Value     interface{} // Set to precise type value through detectType, before detectType it's always string
 	ValueType string      // number, string, bool, time
 }
 
@@ -67,15 +69,15 @@ func (s *Statement) ParseGVKs(gvks []schema.GroupVersionKind, versions ...string
 
 	s.GVR = schema.GroupVersionResource{}
 	s.GVK = schema.GroupVersionKind{}
-	// 获取单个GVK
+	// Get single GVK
 	gvk := s.Tools().GetGVK(gvks, versions...)
 	s.GVK = gvk
 
-	// 获取GVR
+	// Get GVR
 	if s.Tools().IsBuiltinResource(gvk.Kind) {
-		// 内置资源
+		// Built-in resource
 		if s.useCustomGVK {
-			// 设置了CRD，带有version
+			// CRD is set with version
 			s.GVR, s.Namespaced = s.Tools().GetGVRByGVK(gvk)
 		} else {
 			s.GVR, s.Namespaced = s.Tools().GetGVRByKind(gvk.Kind)
@@ -86,33 +88,32 @@ func (s *Statement) ParseGVKs(gvks []schema.GroupVersionKind, versions ...string
 		if err != nil {
 			return s
 		}
-		// 检查CRD是否是Namespaced
+		// Check if CRD is Namespaced
 		s.Namespaced = crd.Object["spec"].(map[string]interface{})["scope"].(string) == "Namespaced"
 		s.GVR = s.Tools().GetGVRFromCRD(crd)
-
 	}
 
 	return s
 }
 
 func (s *Statement) ParseNsNameFromRuntimeObj(obj runtime.Object) *Statement {
-	// 获取元数据（比如Name和Namespace）
+	// Get metadata (like Name and Namespace)
 	accessor, err := meta.Accessor(obj)
 	if err != nil {
 		klog.V(6).Infof("error getting meta data by meta.Accessor : %v", err)
 		return s
 	}
 	if name := accessor.GetName(); name != "" {
-		s.Name = name // 获取资源的名称
+		s.Name = name // Get resource name
 	}
 	if namespace := accessor.GetNamespace(); namespace != "" {
-		s.Namespace = namespace // 获取资源的命名空间
+		s.Namespace = namespace // Get resource namespace
 	}
 	return s
 }
 
 func (s *Statement) ParseGVKFromRuntimeObj(obj runtime.Object) *Statement {
-	// 使用 scheme.Scheme.ObjectKinds() 获取 Kind
+	// Use scheme.Scheme.ObjectKinds() to get Kind
 	gvks, _, err := scheme.Scheme.ObjectKinds(obj)
 	if err != nil {
 		klog.V(6).Infof("error getting kind by scheme.Scheme.ObjectKinds : %v", err)

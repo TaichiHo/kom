@@ -13,14 +13,14 @@ import (
 type Kubectl struct {
 	ID        string     // cluster id
 	Statement *Statement // statement
-	Error     error      // 存放ERROR信息
+	Error     error      // Stores ERROR information
 
 	clone int
 }
 
-// 初始化 kubectl
+// Initialize kubectl
 func initKubectl(config *rest.Config, id string) *Kubectl {
-	klog.V(2).Infof("k8s init 服务器地址：%s\n", config.Host)
+	klog.V(2).Infof("k8s init server address: %s\n", config.Host)
 
 	k := &Kubectl{ID: id, clone: 1}
 
@@ -32,7 +32,7 @@ func initKubectl(config *rest.Config, id string) *Kubectl {
 	return k
 }
 
-// 获取一个全新的实例，只保留ctx
+// Get a completely new instance, only preserving ctx
 func (k *Kubectl) newInstance() *Kubectl {
 	tx := &Kubectl{ID: k.ID, Error: k.Error}
 	// clone with new statement
@@ -41,7 +41,6 @@ func (k *Kubectl) newInstance() *Kubectl {
 		Context: k.Statement.Context,
 	}
 	return tx
-
 }
 
 func (k *Kubectl) getInstance() *Kubectl {

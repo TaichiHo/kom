@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 )
 
-// buildTextResult 构建标准的文本返回结果
+// buildTextResult builds a standard text response result
 func buildTextResult(text string) *mcp.CallToolResult {
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
@@ -20,7 +20,7 @@ func buildTextResult(text string) *mcp.CallToolResult {
 	}
 }
 
-// TextResult 将任意类型转换为标准的mcp.CallToolResult
+// TextResult converts any type to a standard mcp.CallToolResult
 func TextResult[T any](item T, meta *metadata.ResourceMetadata) (*mcp.CallToolResult, error) {
 	switch v := any(item).(type) {
 	case []byte:

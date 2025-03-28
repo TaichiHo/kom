@@ -15,9 +15,9 @@ func Delete(k *kom.Kubectl) error {
 	ns := stmt.Namespace
 	name := stmt.Name
 	ctx := stmt.Context
-	forceDelete := stmt.ForceDelete // 增加强制删除标志
+	forceDelete := stmt.ForceDelete // Add force delete flag
 
-	// 修改删除选项以支持强制删除
+	// Modify delete options to support force delete
 	deleteOptions := metav1.DeleteOptions{}
 	if forceDelete {
 		background := metav1.DeletePropagationBackground
@@ -27,7 +27,7 @@ func Delete(k *kom.Kubectl) error {
 
 	var err error
 	if name == "" {
-		err = fmt.Errorf("删除对象必须指定名称")
+		err = fmt.Errorf("Name must be specified when deleting an object")
 		return err
 	}
 	if namespaced {

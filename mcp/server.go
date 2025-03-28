@@ -17,7 +17,7 @@ import (
 )
 
 func RunMCPServer(name, version string, port int) {
-	// 创建一个新的 MCP 服务器
+	// Create a new MCP server
 	s := server.NewMCPServer(
 		name,
 		version,
@@ -26,7 +26,7 @@ func RunMCPServer(name, version string, port int) {
 		server.WithLogging(),
 	)
 
-	// 注册工具
+	// register tools
 	dynamic.RegisterTools(s)
 	pod.RegisterTools(s)
 	cluster.RegisterTools(s)
@@ -36,10 +36,11 @@ func RunMCPServer(name, version string, port int) {
 	storageclass.RegisterTools(s)
 	ingressclass.RegisterTools(s)
 	yaml.RegisterTools(s)
-	// 创建 SSE 服务器
+
+	// Create SSE server
 	sseServer := server.NewSSEServer(s)
 
-	// 启动服务器
+	// Start server
 	err := sseServer.Start(fmt.Sprintf(":%d", port))
 	if err != nil {
 		klog.Errorf("MCP Server error: %v\n", err)

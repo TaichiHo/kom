@@ -27,14 +27,14 @@ func (s *statefulSet) Restore() error {
 }
 
 func (s *statefulSet) ManagedPods() ([]*corev1.Pod, error) {
-	// 先找到sts
+	// First find the StatefulSet
 	var sts v1.StatefulSet
 	err := s.kubectl.WithCache(s.kubectl.Statement.CacheTTL).Resource(&sts).Get(&sts).Error
 
 	if err != nil {
 		return nil, err
 	}
-	// 通过sts 获取pod
+	// Get pods through StatefulSet
 	var podList []*corev1.Pod
 	err = s.kubectl.newInstance().WithCache(s.kubectl.Statement.CacheTTL).Resource(&corev1.Pod{}).
 		Namespace(s.kubectl.Statement.Namespace).
@@ -50,10 +50,10 @@ func (s *statefulSet) ManagedPod() (*corev1.Pod, error) {
 	if len(podList) > 0 {
 		return podList[0], nil
 	}
-	return nil, fmt.Errorf("未发现StatefulSet[%s]下的Pod", s.kubectl.Statement.Name)
+	return nil, fmt.Errorf("no Pod found under StatefulSet[%s]", s.kubectl.Statement.Name)
 }
 func (s *statefulSet) HPAList() ([]*autoscalingv2.HorizontalPodAutoscaler, error) {
-	// 通过rs 获取pod
+	// Get pods through StatefulSet
 	var list []*autoscalingv2.HorizontalPodAutoscaler
 	err := s.kubectl.newInstance().WithCache(s.kubectl.Statement.CacheTTL).
 		GVK("autoscaling", "v2", "HorizontalPodAutoscaler").

@@ -26,7 +26,7 @@ func (d *deploy) Scale(replicas int32) error {
 	return d.kubectl.Ctl().Scale(replicas)
 }
 func (d *deploy) HPAList() ([]*autoscalingv2.HorizontalPodAutoscaler, error) {
-	// 通过rs 获取pod
+	// Get pods through ReplicaSet
 	var list []*autoscalingv2.HorizontalPodAutoscaler
 	err := d.kubectl.newInstance().WithCache(d.kubectl.Statement.CacheTTL).
 		GVK("autoscaling", "v2", "HorizontalPodAutoscaler").
@@ -37,12 +37,12 @@ func (d *deploy) HPAList() ([]*autoscalingv2.HorizontalPodAutoscaler, error) {
 	return list, err
 }
 func (d *deploy) ManagedPods() ([]*corev1.Pod, error) {
-	// 先找到rs
+	// First find the ReplicaSet
 	rs, err := d.ManagedLatestReplicaSet()
 	if err != nil {
 		return nil, err
 	}
-	// 通过rs 获取pod
+	// Get pods through ReplicaSet
 	var podList []*corev1.Pod
 	err = d.kubectl.newInstance().WithCache(d.kubectl.Statement.CacheTTL).Resource(&corev1.Pod{}).
 		Namespace(d.kubectl.Statement.Namespace).
@@ -58,10 +58,10 @@ func (d *deploy) ManagedPod() (*corev1.Pod, error) {
 	if len(podList) > 0 {
 		return podList[0], nil
 	}
-	return nil, fmt.Errorf("未发现Deployment[%s]下的Pod", d.kubectl.Statement.Name)
+	return nil, fmt.Errorf("no Pod found under Deployment[%s]", d.kubectl.Statement.Name)
 }
 
-// 最新部署版本的RS
+// ManagedLatestReplicaSet returns the ReplicaSet of the latest deployment version
 func (d *deploy) ManagedLatestReplicaSet() (*v1.ReplicaSet, error) {
 	var item v1.Deployment
 	err := d.kubectl.WithCache(d.kubectl.Statement.CacheTTL).Resource(&item).Get(&item).Error
@@ -81,20 +81,20 @@ func (d *deploy) ManagedLatestReplicaSet() (*v1.ReplicaSet, error) {
 		return nil, err
 	}
 
-	// 先看有几个rs，如果有一个，那么就这一个了
+	// First check how many ReplicaSets there are, if there's only one, that's the one
 	if len(rsList) == 1 {
 		return rsList[0], nil
 	}
 
-	// 如果有多个rs，那么需要通过 revision 过滤rs list
-	// 寻找Deploy上的注解
+	// If there are multiple ReplicaSets, need to filter by revision
+	// Look for annotation on Deployment
 	// metadata:
 	//   annotations:
 	//     deployment.kubernetes.io/revision: "50"
 	var revision string
 	for k, v := range item.GetAnnotations() {
 		if strings.HasPrefix(k, "deployment.kubernetes.io/revision") {
-			// 找到 revision
+			// Found revision
 			// deployment.kubernetes.io/revision: "50"
 			// 50
 			revision = v
@@ -107,7 +107,7 @@ func (d *deploy) ManagedLatestReplicaSet() (*v1.ReplicaSet, error) {
 			return rs, nil
 		}
 	}
-	return nil, fmt.Errorf("未发现Deployment[%s]下的最新的RS", item.GetName())
+	return nil, fmt.Errorf("no latest ReplicaSet found under Deployment[%s]", item.GetName())
 }
 
 func (d *deploy) ReplaceImageTag(targetContainerName string, tag string) (*v1.Deployment, error) {
@@ -128,16 +128,16 @@ func (d *deploy) ReplaceImageTag(targetContainerName string, tag string) (*v1.De
 	return &item, err
 }
 
-// replaceImageTag 替换镜像的 tag
+// replaceImageTag replaces the tag of an image
 func replaceImageTag(imageName, newTag string) string {
-	// 检查镜像名称是否包含 tag
+	// Check if image name contains a tag
 	if strings.Contains(imageName, ":") {
-		// 按照 ":" 分割镜像名称和 tag
+		// Split image name and tag by ":"
 		parts := strings.Split(imageName, ":")
-		// 使用新的 tag 替换旧的 tag
+		// Replace old tag with new tag
 		return parts[0] + ":" + newTag
 	} else {
-		// 如果镜像名称中没有 tag，直接添加新的 tag
+		// If image name has no tag, directly add new tag
 		return imageName + ":" + newTag
 	}
 }

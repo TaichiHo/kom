@@ -21,15 +21,15 @@ func Describe(k *kom.Kubectl) error {
 	namespaced := stmt.Namespaced
 
 	if stmt.GVK.Empty() {
-		return fmt.Errorf("请调用GVK()方法设置GroupVersionKind")
+		return fmt.Errorf("Please call GVK() method to set GroupVersionKind")
 	}
 
-	// 反射检查
+	// Reflection check
 	destValue := reflect.ValueOf(stmt.Dest)
 
-	// 确保 dest 是一个指向字节切片的指针
+	// Ensure dest is a pointer to a byte slice
 	if !(destValue.Kind() == reflect.Ptr && destValue.Elem().Kind() == reflect.Slice) || destValue.Elem().Type().Elem().Kind() != reflect.Uint8 {
-		return fmt.Errorf("请确保dest 是一个指向字节切片的指针。定义var s []byte 使用&s")
+		return fmt.Errorf("Please ensure dest is a pointer to a byte slice. Define var s []byte and use &s")
 	}
 
 	if namespaced {
@@ -46,13 +46,13 @@ func Describe(k *kom.Kubectl) error {
 
 	var output string
 	var err error
-	// 执行describe
+	// Execute describe
 	m := k.Status().DescriberMap()
 	gk := schema.GroupKind{
 		Group: gvk.Group,
 		Kind:  gvk.Kind,
 	}
-	// 先从内置的describerMap中查找
+	// First look in the built-in describerMap
 	if d, ok := m[gk]; ok {
 		output, err = d.Describe(ns, name, describe.DescriberSettings{
 			ShowEvents: true,
@@ -61,7 +61,7 @@ func Describe(k *kom.Kubectl) error {
 			return fmt.Errorf("DescriberMap describe %s/%s error: %v", gvk.String(), name, err)
 		}
 	} else {
-		// 没有内置描述器
+		// No built-in descriptor
 		mapping := &meta.RESTMapping{
 			Resource: k.Statement.GVR,
 		}
@@ -75,9 +75,9 @@ func Describe(k *kom.Kubectl) error {
 		}
 	}
 
-	// 将结果写入 tx.Statement.Dest
+	// Write result to tx.Statement.Dest
 	if destBytes, ok := k.Statement.Dest.(*[]byte); ok {
-		// 直接使用 outBuf.Bytes() 赋值
+		// Directly assign using outBuf.Bytes()
 		*destBytes = []byte(output)
 		klog.V(8).Infof("Describe result %s", *destBytes)
 	} else {

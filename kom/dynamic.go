@@ -9,11 +9,11 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// listResources 列出指定资源类型的所有对象
+// listResources lists all objects of the specified resource type
 func (k *Kubectl) listResources(ctx context.Context, kind string, ns string) (resources []*unstructured.Unstructured, err error) {
 	gvr, namespaced := k.Tools().GetGVRByKind(kind)
 	if gvr.Empty() {
-		return nil, fmt.Errorf("不支持的资源类型: %s", kind)
+		return nil, fmt.Errorf("unsupported resource type: %s", kind)
 	}
 
 	listOptions := metav1.ListOptions{}

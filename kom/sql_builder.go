@@ -11,10 +11,10 @@ import (
 )
 
 // Sql TODO Insert Update Delete
+// Currently supports Select
+// Parses SQL into function calls, implementing support for native SQL statements
 //
-//	 已支持Select
-//		解析sql为函数调用，实现支持原生sql语句
-//
+// Example:
 // select * from pod where pod.name='?', 'abc'
 func (k *Kubectl) Sql(sql string, values ...interface{}) *Kubectl {
 	tx := k.getInstance()
@@ -22,8 +22,9 @@ func (k *Kubectl) Sql(sql string, values ...interface{}) *Kubectl {
 
 	sql = formatSql(sql, values)
 
-	// 添加反引号，将metadata.name 转为`metadata.name`,
-	// k8s中很多类似json的字段，需要用反引号进行包裹，避免被作为db.table形式使用
+	// Add backticks to convert metadata.name to `metadata.name`
+	// Many k8s fields are similar to JSON fields and need to be wrapped in backticks
+	// to avoid being treated as db.table format
 	// sql = NewSqlParse(sql).AddBackticks()
 
 	stmt, err := sqlparser.Parse(sql)
@@ -33,14 +34,14 @@ func (k *Kubectl) Sql(sql string, values ...interface{}) *Kubectl {
 		return tx
 	}
 
-	var conditions []Condition // 存储解析后的条件
+	var conditions []Condition // Store parsed conditions
 
-	// 断言为 *sqlparser.Select 类型
+	// Assert as *sqlparser.Select type
 	selectStmt, ok := stmt.(*sqlparser.Select)
 	if !ok {
 		log.Fatalf("Not a SELECT statement")
 	}
-	// 获取 Select 语句中的 From 作为Resource
+	// Get From clause from Select statement as Resource
 	from := sqlparser.String(selectStmt.From)
 	gvk := k.Tools().FindGVKByTableNameInApiResources(from)
 	if gvk == nil {
@@ -51,29 +52,29 @@ func (k *Kubectl) Sql(sql string, values ...interface{}) *Kubectl {
 		return tx
 	}
 
-	// 设置GVK
+	// Set GVK
 	tx.GVK(gvk.Group, gvk.Version, gvk.Kind)
 
-	// 获取 LIMIT 子句信息
+	// Get LIMIT clause information
 	limit := selectStmt.Limit
 	if limit != nil {
-		// 获取 LIMIT 的 Rowcount 和 Offset
+		// Get Rowcount and Offset from LIMIT
 		rowCount := sqlparser.String(limit.Rowcount)
 		offset := sqlparser.String(limit.Offset)
 
 		tx.Limit(utils.ToInt(rowCount))
 		tx.Offset(utils.ToInt(offset))
 	}
-	// 解析Where语句，活的执行条件
+	// Parse Where clause to get execution conditions
 	conditions = parseWhereExpr(conditions, 0, "AND", selectStmt.Where.Expr)
 
-	// 探测 conditions中的条件值类型
+	// Detect value types in conditions
 	for i, cond := range conditions {
 		conditions[i].ValueType, conditions[i].Value = utils.DetectType(cond.Value)
 	}
 	tx.Statement.Filter.Conditions = conditions
 
-	// 设置排序字段
+	// Set order fields
 	orderBy := selectStmt.OrderBy
 	if orderBy != nil {
 		tx.Statement.Filter.Order = sqlparser.String(orderBy)
@@ -94,7 +95,7 @@ func (k *Kubectl) From(tableName string) *Kubectl {
 		return tx
 	}
 	tx.Statement.Filter.From = tableName
-	// 设置GVK
+	// Set GVK
 	tx.GVK(gvk.Group, gvk.Version, gvk.Kind)
 	return tx
 }
@@ -105,7 +106,7 @@ func (k *Kubectl) Where(condition string, values ...interface{}) *Kubectl {
 
 	trimSql := strings.ReplaceAll(sql, " ", "")
 	if trimSql == "(())" || trimSql == "()" || trimSql == "" {
-		// 没有内容
+		// No content
 		return tx
 	}
 	if originalSql != "" {
@@ -114,8 +115,9 @@ func (k *Kubectl) Where(condition string, values ...interface{}) *Kubectl {
 		sql = fmt.Sprintf(" select * from fake where ( %s )", sql)
 	}
 
-	// 添加反引号，将metadata.name 转为`metadata.name`,
-	// k8s中很多类似json的字段，需要用反引号进行包裹，避免被作为db.table形式使用
+	// Add backticks to convert metadata.name to `metadata.name`
+	// Many k8s fields are similar to JSON fields and need to be wrapped in backticks
+	// to avoid being treated as db.table format
 	// sql = NewSqlParse(sql).AddBackticks()
 
 	tx.Statement.Filter.Sql = sql
@@ -127,9 +129,9 @@ func (k *Kubectl) Where(condition string, values ...interface{}) *Kubectl {
 		return tx
 	}
 
-	var conditions []Condition // 存储解析后的条件
+	var conditions []Condition // Store parsed conditions
 
-	// 断言为 *sqlparser.Select 类型
+	// Assert as *sqlparser.Select type
 	selectStmt, ok := stmt.(*sqlparser.Select)
 	if !ok {
 		klog.Errorf("not select parsing SQL:%s,%v", sql, err)
@@ -137,10 +139,10 @@ func (k *Kubectl) Where(condition string, values ...interface{}) *Kubectl {
 		return tx
 	}
 
-	// 解析Where语句，获得执行条件
+	// Parse Where clause to get execution conditions
 	conditions = parseWhereExpr(conditions, 0, "AND", selectStmt.Where.Expr)
 
-	// 探测 conditions中的条件值类型
+	// Detect value types in conditions
 	for i, cond := range conditions {
 		conditions[i].ValueType, conditions[i].Value = utils.DetectType(cond.Value)
 	}
@@ -152,13 +154,13 @@ func (k *Kubectl) Where(condition string, values ...interface{}) *Kubectl {
 	return tx
 }
 
-// formatSql
-//
-//	select * from pod where pod.name='?', 'abc'
+// formatSql formats SQL with placeholders
+// Example:
+// select * from pod where pod.name='?', 'abc'
 func formatSql(condition string, values []interface{}) string {
-	// 将 values 替换到 condition 中的占位符 ?
+	// Replace placeholders (?) in condition with values
 	for _, value := range values {
-		// 对值进行安全格式化，例如字符串加单引号
+		// Safely format values, e.g., add single quotes for strings
 		switch v := value.(type) {
 		case string:
 			condition = strings.Replace(condition, "?", fmt.Sprintf("'%s'", v), 1)
@@ -169,7 +171,8 @@ func formatSql(condition string, values []interface{}) string {
 	return condition
 }
 
-// Order
+// Order sets the order clause
+// Examples:
 // Order(" id desc")
 // Order(" date asc")
 func (k *Kubectl) Order(order string) *Kubectl {
@@ -188,7 +191,7 @@ func (k *Kubectl) Offset(offset int) *Kubectl {
 	return tx
 }
 
-// Skip AliasFor Offset
+// Skip is an alias for Offset
 func (k *Kubectl) Skip(skip int) *Kubectl {
 	return k.Offset(skip)
 }

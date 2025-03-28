@@ -26,14 +26,14 @@ func (r *replicaSet) Restore() error {
 }
 
 func (r *replicaSet) ManagedPods() ([]*corev1.Pod, error) {
-	// 先找到rs
+	// First find the ReplicaSet
 	var rs v1.ReplicaSet
 	err := r.kubectl.WithCache(r.kubectl.Statement.CacheTTL).Resource(&rs).Get(&rs).Error
 
 	if err != nil {
 		return nil, err
 	}
-	// 通过rs 获取pod
+	// Get pods through ReplicaSet
 	var podList []*corev1.Pod
 	err = r.kubectl.newInstance().WithCache(r.kubectl.Statement.CacheTTL).Resource(&corev1.Pod{}).
 		Namespace(r.kubectl.Statement.Namespace).
@@ -49,10 +49,10 @@ func (r *replicaSet) ManagedPod() (*corev1.Pod, error) {
 	if len(podList) > 0 {
 		return podList[0], nil
 	}
-	return nil, fmt.Errorf("未发现ReplicaSet[%s]下的Pod", r.kubectl.Statement.Name)
+	return nil, fmt.Errorf("no Pod found under ReplicaSet[%s]", r.kubectl.Statement.Name)
 }
 func (r *replicaSet) HPAList() ([]*autoscalingv2.HorizontalPodAutoscaler, error) {
-	// 通过rs 获取pod
+	// Get pods through ReplicaSet
 	var list []*autoscalingv2.HorizontalPodAutoscaler
 	err := r.kubectl.newInstance().WithCache(r.kubectl.Statement.CacheTTL).
 		GVK("autoscaling", "v2", "HorizontalPodAutoscaler").
