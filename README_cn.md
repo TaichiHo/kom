@@ -6,17 +6,9 @@
 
 ## 简介
 
-Kom (Kubernetes Operations Manager) is a powerful SDK-level wrapper for kubectl and client-go, designed to simplify Kubernetes resource management. It provides an intuitive interface for managing Kubernetes resources with features including:
-
-• Multi-cluster management with seamless switching between clusters
-• Full CRUD operations for both built-in and Custom Resource Definitions (CRDs)
-• SQL-like querying for Kubernetes resources
-• Advanced Pod operations (logs, exec, file management)
-• Built-in callback mechanism for custom operation handling
-• Streamlined deployment operations (restart, scale, rollout)
-• Comprehensive node management capabilities
-
-Perfect for developers and operators looking for a more programmatic and efficient way to interact with Kubernetes clusters. Built with Go, it offers type-safe operations and chainable API calls for better development experience.
+`kom` 是一个用于 Kubernetes 操作的工具，相当于SDK级的kubectl、client-go的使用封装。
+它提供了一系列功能来管理 Kubernetes 资源，包括创建、更新、删除和获取资源。这个项目支持多种 Kubernetes 资源类型的操作，并能够处理自定义资源定义（CRD）。
+通过使用 `kom`，你可以轻松地进行资源的增删改查和日志获取以及操作POD内文件等动作，甚至可以使用SQL语句来查询、管理k8s资源。
 
 ## **特点**
 1. 简单易用：kom 提供了丰富的功能，包括创建、更新、删除、获取、列表等，包括对内置资源以及CRD资源的操作。
