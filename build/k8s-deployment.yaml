@@ -16,10 +16,13 @@ rules:
   resources: ["clusters"]
   verbs: ["get", "list", "watch"]
 - apiGroups: [""]
-  resources: ["secrets"]
+  resources: ["secrets", "pods", "services", "namespaces", "nodes"]
   verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources: ["namespaces"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets", "daemonsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
   verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

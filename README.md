@@ -659,7 +659,7 @@ func cb(k *kom.Kubectl) error {
 * Query k8s resources through the SQL() method, which is simple and efficient.
 * The table names support the full names and abbreviations of all resources registered within the cluster, including CRD resources. As long as they are registered on the cluster, they can be queried.
 * Typical table names include: pod, deployment, service, ingress, pvc, pv, node, namespace, secret, configmap, serviceaccount, role, rolebinding, clusterrole, clusterrolebinding, crd, cr, hpa, daemonset, statefulset, job, cronjob, limitrange, horizontalpodautoscaler, poddisruptionbudget, networkpolicy, endpoints, ingressclass, mutatingwebhookconfiguration, validatingwebhookconfiguration, customresourcedefinition, storageclass, persistentvolumeclaim, persistentvolume, horizontalpodautoscaler, podsecurity. All of them can be queried.
-* The query fields currently only support "*". That is, only "select *" is supported.
+* The query fields currently only support "*"
 * The query conditions currently support =,!=, >=, <=, <>, like, in, not in, and, or, between.
 * The sorting fields currently support sorting on a single field. By default, they are sorted in descending order according to the creation time.
 
@@ -787,4 +787,55 @@ err = kom.DefaultCluster().Resource(&Node{}).Name("kind-control-plane").Ctl().An
 #### Remove Annotation from Resource
 ```go
 err = kom.DefaultCluster().Resource(&Node{}).Name("kind-control-plane").Ctl().Annotate("name-")
+```
+
+# KOM MCP Server
+
+## Connecting with Cursor
+
+To connect Cursor to the KOM MCP server:
+
+1. Ensure the MCP server is running in your Minikube cluster:
+```bash
+kubectl get pods -l app=kom-mcp-server
+```
+
+2. Set up port forwarding:
+```bash
+kubectl port-forward svc/kom-mcp-server 9096:9096
+```
+
+3. Create a `.cursor/mcp.json` file in your project root with the following content:
+```json
+{
+  "mcpServers": {
+    "kom": {
+      "url": "http://localhost:9096/sse",
+      "env": {
+        "API_KEY": "value"
+      }
+    }
+  }
+}
+```
+
+4. Restart Cursor to apply the configuration.
+
+## Troubleshooting
+
+If you can't connect to the MCP server:
+
+1. Check if the pod is running:
+```bash
+kubectl get pods -l app=kom-mcp-server
+```
+
+2. Check pod logs:
+```bash
+kubectl logs -l app=kom-mcp-server
+```
+
+3. Verify port forwarding is working, getting a 404 error means this IS working:
+```bash
+curl -v localhost:9096/health
 ```
