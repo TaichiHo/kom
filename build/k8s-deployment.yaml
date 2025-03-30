@@ -1,3 +1,42 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kom-mcp-server
+  labels:
+    app: kom-mcp-server
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kom-mcp-server
+  labels:
+    app: kom-mcp-server
+rules:
+- apiGroups: ["cluster.x-k8s.io"]
+  resources: ["clusters"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kom-mcp-server
+  labels:
+    app: kom-mcp-server
+subjects:
+- kind: ServiceAccount
+  name: kom-mcp-server
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: kom-mcp-server
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,9 +53,19 @@ spec:
       labels:
         app: kom-mcp-server
     spec:
+      serviceAccountName: kom-mcp-server  # Specify the ServiceAccount
+      # Add tolerations for control plane
+      tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "node-role.kubernetes.io/master"  # Legacy taint key, included for compatibility
+        operator: "Exists"
+        effect: "NoSchedule"
       containers:
       - name: mcp-server
-        image: docker.io/taichiho/kom-mcp-server:latest
+        image: localhost:5000/kom-mcp-server:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 9096
         resources:
