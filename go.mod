@@ -2,6 +2,8 @@ module github.com/weibaohui/kom
 
 go 1.23.0
 
+toolchain go1.23.2
+
 require (
 	github.com/dgraph-io/ristretto/v2 v2.1.0
 	github.com/duke-git/lancet/v2 v2.3.5
