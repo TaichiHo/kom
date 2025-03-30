@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "kom": {
+      "url": "http://localhost:9096/sse",
+      "env": {
+        "API_KEY": "value"
+      }
+    }
+  }
+}
