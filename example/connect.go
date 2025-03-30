@@ -17,13 +17,14 @@ func Connect() {
 	if defaultKubeConfig == "" {
 		defaultKubeConfig = filepath.Join(homedir.HomeDir(), ".kube", "config")
 	}
-	_, err := kom.Clusters().RegisterByPathWithID(defaultKubeConfig, "default")
-	if err != nil {
-		klog.Errorf("register cluster api configs error %v", err)
+	if _, err := kom.Clusters().RegisterInCluster(); err != nil {
+		klog.Warningf("register in-cluster error: %v", err)
 	}
-	err = kom.Clusters().RegisterClusterAPIConfigs()
-	if err != nil {
-		klog.Errorf("register cluster api configs error %v", err)
+	if _, err := kom.Clusters().RegisterByPathWithID(defaultKubeConfig, "default"); err != nil {
+		klog.Warningf("register default cluster error: %v", err)
+	}
+	if err := kom.Clusters().RegisterClusterAPIConfigs(); err != nil {
+		klog.Warningf("register cluster api configs error: %v", err)
 	}
 	kom.Clusters().Show()
 }
