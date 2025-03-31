@@ -21,6 +21,7 @@ func DeleteDynamicResource() mcp.Tool {
 		mcp.WithString("version", mcp.Description("API version of the resource")),
 		mcp.WithString("kind", mcp.Description("Kind of the resource")),
 		mcp.WithBoolean("force", mcp.Description("Force delete the resource")),
+	)
 }
 
 func DeleteDynamicResourceHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
