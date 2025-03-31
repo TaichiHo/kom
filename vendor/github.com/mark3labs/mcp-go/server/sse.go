@@ -9,7 +9,10 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+<<<<<<< HEAD
 	"sync/atomic"
+=======
+>>>>>>> origin/main
 
 	"github.com/google/uuid"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -23,7 +26,10 @@ type sseSession struct {
 	eventQueue          chan string // Channel for queuing events
 	sessionID           string
 	notificationChannel chan mcp.JSONRPCNotification
+<<<<<<< HEAD
 	initialized         atomic.Bool
+=======
+>>>>>>> origin/main
 }
 
 // SSEContextFunc is a function that takes an existing context and the current
@@ -39,6 +45,7 @@ func (s *sseSession) NotificationChannel() chan<- mcp.JSONRPCNotification {
 	return s.notificationChannel
 }
 
+<<<<<<< HEAD
 func (s *sseSession) Initialize() {
 	s.initialized.Store(true)
 }
@@ -47,6 +54,8 @@ func (s *sseSession) Initialized() bool {
 	return s.initialized.Load()
 }
 
+=======
+>>>>>>> origin/main
 var _ ClientSession = (*sseSession)(nil)
 
 // SSEServer implements a Server-Sent Events (SSE) based MCP server.

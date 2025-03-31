@@ -109,7 +109,11 @@ github.com/liggitt/tabwriter
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
+<<<<<<< HEAD
 # github.com/mark3labs/mcp-go v0.17.0
+=======
+# github.com/mark3labs/mcp-go v0.16.0
+>>>>>>> origin/main
 ## explicit; go 1.23
 github.com/mark3labs/mcp-go/mcp
 github.com/mark3labs/mcp-go/server

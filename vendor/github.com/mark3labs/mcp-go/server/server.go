@@ -8,6 +8,10 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+<<<<<<< HEAD
+=======
+	"sync/atomic"
+>>>>>>> origin/main
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -47,10 +51,13 @@ type ServerTool struct {
 
 // ClientSession represents an active session that can be used by MCPServer to interact with client.
 type ClientSession interface {
+<<<<<<< HEAD
 	// Initialize marks session as fully initialized and ready for notifications
 	Initialize()
 	// Initialized returns if session is ready to accept notifications
 	Initialized() bool
+=======
+>>>>>>> origin/main
 	// NotificationChannel provides a channel suitable for sending notifications to client.
 	NotificationChannel() chan<- mcp.JSONRPCNotification
 	// SessionID is a unique identifier used to track user session.
@@ -148,6 +155,10 @@ type MCPServer struct {
 	notificationHandlers map[string]NotificationHandlerFunc
 	capabilities         serverCapabilities
 	sessions             sync.Map
+<<<<<<< HEAD
+=======
+	initialized          atomic.Bool // Use atomic for the initialized flag
+>>>>>>> origin/main
 	hooks                *Hooks
 }
 
@@ -204,7 +215,11 @@ func (s *MCPServer) sendNotificationToAllClients(
 	}
 
 	s.sessions.Range(func(k, v any) bool {
+<<<<<<< HEAD
 		if session, ok := v.(ClientSession); ok && session.Initialized() {
+=======
+		if session, ok := v.(ClientSession); ok {
+>>>>>>> origin/main
 			select {
 			case session.NotificationChannel() <- notification:
 			default:
@@ -222,7 +237,11 @@ func (s *MCPServer) SendNotificationToClient(
 	params map[string]any,
 ) error {
 	session := ClientSessionFromContext(ctx)
+<<<<<<< HEAD
 	if session == nil || !session.Initialized() {
+=======
+	if session == nil {
+>>>>>>> origin/main
 		return fmt.Errorf("notification channel not initialized")
 	}
 
@@ -408,10 +427,20 @@ func (s *MCPServer) AddTools(tools ...ServerTool) {
 	for _, entry := range tools {
 		s.tools[entry.Tool.Name] = entry
 	}
+<<<<<<< HEAD
 	s.mu.Unlock()
 
 	// Send notification to all initialized sessions
 	s.sendNotificationToAllClients("notifications/tools/list_changed", nil)
+=======
+	initialized := s.initialized.Load()
+	s.mu.Unlock()
+
+	// Send notification if server is already initialized
+	if initialized {
+		s.sendNotificationToAllClients("notifications/tools/list_changed", nil)
+	}
+>>>>>>> origin/main
 }
 
 // SetTools replaces all existing tools with the provided list
@@ -428,10 +457,20 @@ func (s *MCPServer) DeleteTools(names ...string) {
 	for _, name := range names {
 		delete(s.tools, name)
 	}
+<<<<<<< HEAD
 	s.mu.Unlock()
 
 	// Send notification to all initialized sessions
 	s.sendNotificationToAllClients("notifications/tools/list_changed", nil)
+=======
+	initialized := s.initialized.Load()
+	s.mu.Unlock()
+
+	// Send notification if server is already initialized
+	if initialized {
+		s.sendNotificationToAllClients("notifications/tools/list_changed", nil)
+	}
+>>>>>>> origin/main
 }
 
 // AddNotificationHandler registers a new handler for incoming notifications
@@ -494,9 +533,13 @@ func (s *MCPServer) handleInitialize(
 		Instructions: s.instructions,
 	}
 
+<<<<<<< HEAD
 	if session := ClientSessionFromContext(ctx); session != nil {
 		session.Initialize()
 	}
+=======
+	s.initialized.Store(true)
+>>>>>>> origin/main
 	return &result, nil
 }
 

@@ -89,6 +89,7 @@ Suitable for integration with MCP tools such as Cursor, Claude Desktop, Windsurf
   }
 }
 ```
+## Usage Examples
 
 #### MCP Tool List (49 types)
 
@@ -662,7 +663,6 @@ func cb(k *kom.Kubectl) error {
 * The query fields currently only support "*"
 * The query conditions currently support =,!=, >=, <=, <>, like, in, not in, and, or, between.
 * The sorting fields currently support sorting on a single field. By default, they are sorted in descending order according to the creation time.
-
 #### Query k8s Built-in Resources
 ```go
     sql := "select * from deploy where metadata.namespace='kube-system' or metadata.namespace='default' order by  metadata.creationTimestamp asc   "
@@ -699,7 +699,10 @@ err := kom.DefaultCluster().From("pod").
 ```go
 err = kom.DefaultCluster().Resource(&Deployment{}).Namespace("default").Name("nginx").Ctl().Rollout().Restart()
 ```
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
 #### Scale Deployment
 ```go
 // Set the replica count of the nginx deployment to 3
@@ -743,47 +746,38 @@ err := kom.DefaultCluster().Resource(&Deployment{}).Namespace("default").Name("n
 // Check the status of the nginx deployment rollout
 result, err := kom.DefaultCluster().Resource(&Deployment{}).Namespace("default").Name("nginx").Ctl().Rollout().Status()
 ```
-
 #### Taint Node
 ```go
 err = kom.DefaultCluster().Resource(&Node{}).Name("kind-control-plane").Ctl().Node().Taint("dedicated=special-user:NoSchedule")
 ```
-
 #### Remove Taint from Node
 ```go
 err = kom.DefaultCluster().Resource(&Node{}).Name("kind-control-plane").Ctl().Node().UnTaint("dedicated=special-user:NoSchedule")
 ```
-
 #### Cordon Node
 ```go
 err = kom.DefaultCluster().Resource(&Node{}).Name("kind-control-plane").Ctl().Node().Cordon()
 ```
-
 #### UnCordon Node
 ```go
 err = kom.DefaultCluster().Resource(&Node{}).Name("kind-control-plane").Ctl().Node().UnCordon()
 ```
-
 #### Drain Node
 ```go
 err = kom.DefaultCluster().Resource(&Node{}).Name("kind-control-plane").Ctl().Node().Drain()
 ```
-
 #### Label Resource
 ```go
 err = kom.DefaultCluster().Resource(&Node{}).Name("kind-control-plane").Ctl().Label("name=zhangsan")
 ```
-
 #### Remove Label from Resource
 ```go
 err = kom.DefaultCluster().Resource(&Node{}).Name("kind-control-plane").Ctl().Label("name-")
 ```
-
 #### Annotate Resource
 ```go
 err = kom.DefaultCluster().Resource(&Node{}).Name("kind-control-plane").Ctl().Annotate("name=zhangsan")
 ```
-
 #### Remove Annotation from Resource
 ```go
 err = kom.DefaultCluster().Resource(&Node{}).Name("kind-control-plane").Ctl().Annotate("name-")
