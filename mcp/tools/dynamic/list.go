@@ -21,10 +21,7 @@ func ListDynamicResource() mcp.Tool {
 		mcp.WithString("version", mcp.Description("API version of the resource")),
 		mcp.WithString("kind", mcp.Description("Kind of the resource")),
 		mcp.WithString("label", mcp.Description("Label selector to filter resources (e.g. app=k8m)")),
-<<<<<<< HEAD:mcp/tools/dynamic/list.go
 		mcp.WithString("field", mcp.Description("Field selector to filter resources (e.g. metadata.name=test-deploy)")),
-=======
->>>>>>> origin/main:mcp/tools/dynamic/dynamic_list.go
 	)
 }
 
