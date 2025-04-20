@@ -1,5 +1,8 @@
 # Build stage
-FROM golang:1.23 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.21-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git
 
 # Set working directory
 WORKDIR /app
@@ -17,18 +20,17 @@ RUN go mod download
 COPY . .
 
 # Build the application with build tags
-RUN CGO_ENABLED=0 GOOS=linux go build -tags=k8s_1_32 -o mcp-server ./main.go
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -tags=k8s_1_28 -o mcp-server ./main.go
 
 # Final stage
-FROM ubuntu:24.04
+FROM --platform=$TARGETPLATFORM alpine:3.18
 
 # Install necessary runtime dependencies
-RUN apt-get update && \
-    apt-get install -y ca-certificates tzdata && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache ca-certificates tzdata
 
 # Create non-root user
-RUN useradd -u 10001 -m mcp
+RUN adduser -D -u 10001 mcp
 
 WORKDIR /app
 
