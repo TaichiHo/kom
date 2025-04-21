@@ -39,4 +39,30 @@ func RegisterTools(s *server.MCPServer) {
 		NodePodCountTool(),
 		NodePodCountHandler,
 	)
+
+	s.AddTool(
+		SystemdServiceStatusTool(),
+		SystemdServiceStatusHandler,
+	)
+	s.AddTool(
+		RestartSystemdServiceTool(),
+		RestartSystemdServiceHandler,
+	)
+
+	s.AddTool(
+		KubeletServiceTool(),
+		KubeletServiceHandler,
+	)
+	s.AddTool(
+		KubeletJournalTool(),
+		KubeletJournalHandler,
+	)
+	s.AddTool(
+		ContainerdServiceTool(),
+		ContainerdServiceHandler,
+	)
+	s.AddTool(
+		ContainerdJournalTool(),
+		ContainerdJournalHandler,
+	)
 }
